@@ -1,0 +1,206 @@
+/* =============================
+   Common Table Styles
+   ============================= */
+table.table.table-bordered thead {
+    background-color: #1e3c72 !important; 
+    color: #fff !important;            
+    font-weight: 600;
+}
+
+table.table.table-bordered tbody tr {
+    background-color: #ffffff !important;
+    transition: background-color 0.2s ease;
+}
+
+table.table.table-bordered tbody tr:hover {
+    background-color: #f0f5ff !important; 
+}
+
+table.table.table-bordered th,
+table.table.table-bordered td {
+    border: 1px solid #c5d9f0 !important; 
+}
+
+table.table tbody tr:hover {
+    background-color: #ffffff !important; 
+}
+
+table.table tbody tr {
+    background-color: #ffffff !important;
+}
+
+table.table-bordered th,
+table.table-bordered td {
+    border: 1px solid #c5d9f0 !important; 
+}
+
+/* =============================
+   Buttons (Add, Edit, Delete)
+   ============================= */
+.btn-primary, .btn-site {
+    background-color: #2a5298 !important; 
+    border-color: #2a5298 !important;
+    color: #fff !important;
+    font-weight: 500;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.btn-primary:hover, .btn-site:hover {
+    background-color: #1e3c72 !important;
+    border-color: #1e3c72 !important;
+    color: #fff !important;
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background-color: #f77f00 !important; 
+    border-color: #f77f00 !important;
+    color: #fff !important;
+}
+
+.btn-secondary:hover {
+    background-color: #d96c00 !important;
+    border-color: #d96c00 !important;
+    color: #fff !important;
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background-color: #b35f6d !important; 
+    border-color: #b35f6d !important;
+    color: #fff !important;
+}
+
+.btn-danger:hover {
+    background-color: #923f4d !important;
+    border-color: #923f4d !important;
+    color: #fff !important;
+    transform: translateY(-2px);
+}
+
+/* =============================
+   Input & Search Boxes
+   ============================= */
+.input-group-text {
+    background-color: #e6f0ff !important;
+    color: #1e3c72 !important; 
+    border: none !important;
+}
+
+.form-control {
+    border: 1px solid #c5d9f0 !important;
+    box-shadow: none !important;
+}
+
+.form-control:focus {
+    border-color: #2a5298 !important;
+    box-shadow: 0 0 0 0.2rem rgba(42, 82, 152, 0.25) !important;
+}
+
+/* =============================
+   Icons / Back Arrows
+   ============================= */
+.back-arrow i {
+    color: #2a5298 !important;
+}
+.back-arrow:hover i {
+    color: #1e3c72 !important; 
+}
+
+.back-arrow {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background 0.3s ease;
+}
+
+.back-arrow:hover {
+    background: rgba(30, 60, 114, 0.1);
+}
+
+/* =============================
+   Page Titles
+   ============================= */
+h3, h4 {
+    color: #1e3c72 !important; 
+    font-weight: 600;
+}
+
+/* =============================
+   Responsive Table
+   ============================= */
+.table-responsive {
+    overflow-x: auto;
+}
+
+/* =============================
+   Optional: Small Adjustments
+   ============================= */
+.table td .btn i {
+    margin-right: 4px; 
+}
+
+.table tbody tr td {
+    vertical-align: middle;
+}
+
+/* =============================
+   DataTable Search & Length Common Styles
+   ============================= */
+.dataTables_wrapper .dataTables_filter {
+    float: right;
+    margin-bottom: 10px;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    border: 1px solid #c5d9f0 !important;  
+    border-radius: 0.375rem !important;
+    padding: 0.25rem 0.5rem !important;
+    width: 200px;
+    transition: border-color 0.3s ease, box-shadow 0.2s ease;
+}
+
+.dataTables_wrapper .dataTables_filter input:focus {
+    border-color: #2a5298 !important; 
+    box-shadow: 0 0 0 0.2rem rgba(42, 82, 152, 0.25) !important;
+}
+
+.dataTables_wrapper .dataTables_filter i {
+    background-color: #2a5298;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    margin-right: 0.25rem;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    border: 1px solid #c5d9f0 !important;
+    border-radius: 0.375rem !important;
+    padding: 0.25rem 0.5rem;
+    color: #1e3c72;
+    font-weight: 500;
+}
+
+.dataTables_wrapper .dataTables_length label {
+    color: #1e3c72 !important;
+    font-weight: 500;
+}
+
+/* Pagination buttons */
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    border: 1px solid #c5d9f0;
+    border-radius: 0.375rem;
+    background-color: #e6f0ff;
+    color: #1e3c72 !important;
+    padding: 3px 10px;
+    margin: 0 2px;
+    transition: all 0.2s ease;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background-color: #2a5298 !important; 
+    color: #fff !important;
+    border-color: #2a5298 !important;
+}

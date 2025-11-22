@@ -1,0 +1,244 @@
+@model TaskManagement.Models.ProjectBo
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using TaskManagement.Models.Enums
+
+@{
+    ViewData["Title"] = "Edit Work Segment";
+
+    var users = ViewBag.Users as List<ApiUserDto> ?? new List<ApiUserDto>();
+    var departments = ViewBag.Departments as List<ApiDeptDto> ?? new List<ApiDeptDto>();
+
+    var locationList = Enum.GetValues(typeof(LocationEnum))
+        .Cast<LocationEnum>()
+        .Select(e => new SelectListItem { Value = e.ToString(), Text = e.ToString() });
+
+    var statusList = new List<SelectListItem>
+    {
+        new SelectListItem { Value = "0", Text = "Active" },
+        new SelectListItem { Value = "1", Text = "Pending" },
+        new SelectListItem { Value = "2", Text = "In Progress" },
+        new SelectListItem { Value = "3", Text = "Completed" }
+    };
+
+    var userList = users.Select(u => new SelectListItem
+    {
+        Value = u.userName,
+        Text = u.userName,
+        Selected = Model.SelectedUserNames != null && Model.SelectedUserNames.Contains(u.userName)
+    }).ToList();
+}
+
+<!-- CSS -->
+<link href="~/css/select2.min.css" rel="stylesheet" />
+<link href="~/lib/bootstrap-datepicker-1.9.0-dist/css/bootstrap-datepicker.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="~/css/site.css" />
+
+<style>
+    .form-control, .form-select, .select2-container .select2-selection--single, .select2-container .select2-selection--multiple {
+        height: 40px !important; min-height: 40px !important; border-radius: 6px !important;
+        border: 1px solid #c5d9f0 !important; font-size: 0.95rem;
+    }
+    .select2-container--default .select2-selection--multiple { min-height: 40px !important; height: auto !important; display: flex; align-items: center; padding: 2px 4px; }
+    .custom-form-card { border: 1px solid #c5d9f0 !important; border-radius: 8px; }
+    .custom-form-card .card-body { padding: 2rem; }
+    .back-arrow i { color: #2a5298 !important; font-size: 1.5rem; }
+    .back-arrow:hover i { color: #1e3c72 !important; }
+    .back-arrow { display: inline-flex; align-items: center; padding: 5px; border-radius: 50%; transition: background 0.3s ease; }
+    .back-arrow:hover { background: rgba(30, 60, 114, 0.1); }
+    label { color: #1e3c72 !important; font-weight: 500; margin-bottom: 0.5rem; }
+    .form-control:focus, .form-select:focus, .select2-container--default.select2-container--focus .select2-selection {
+        border-color: #2a5298 !important;
+        box-shadow: 0 0 0 0.2rem rgba(42, 82, 152, 0.25) !important;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background-color: #2a5298 !important; border-color: #2a5298 !important; color: white;
+    }
+    .btn-primary { background-color: #2a5298 !important; border-color: #2a5298 !important; color: #fff !important; font-weight: 500; padding: 0.5rem 2rem; transition: 0.3s; }
+    .btn-primary:hover { background-color: #1e3c72 !important; border-color: #1e3c72 !important; transform: translateY(-2px); }
+    h4 { color: #1e3c72 !important; font-weight: 600; }
+</style>
+
+<div class="container mt-4">
+    <div class="card custom-form-card shadow-sm w-100" style="max-width:1200px;">
+        <div class="card-body">
+            <div class="d-flex align-items-center mb-4">
+                <a asp-action="Index" class="me-2 text-decoration-none back-arrow">
+                    <i class="bi bi-arrow-left-circle fa-lg"></i>
+                </a>
+                <h4 class="fw-bold mb-0">Edit Work Segment</h4>
+            </div>
+
+            @Html.AntiForgeryToken()
+            <form id="editForm">
+                <input asp-for="Id" type="hidden" />
+
+                <div class="row g-3">
+                    <!-- Work Segment -->
+                    <div class="col-md-3">
+                        <label>Work Segment</label>
+                        <input asp-for="ProjectId" class="form-control" />
+                    </div>
+
+                    <!-- Location -->
+                    <div class="col-md-3">
+                        <label>Location</label>
+                        <select id="Location" asp-for="Location" class="form-select select2">
+                            <option value="">-- Select Location --</option>
+                            @foreach (var loc in locationList)
+                            {
+                                <option value="@loc.Value">@loc.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Department -->
+                    <div class="col-md-3">
+                        <label>Department</label>
+                        <select id="Department" asp-for="Department" class="form-select select2">
+                            <option value="">-- Select Department --</option>
+                            @foreach (var dept in departments)
+                            {
+                                <option value="@dept.SectionId">@dept.SectionName</option>
+                            }
+                        </select>
+                    </div>
+                    <!-- Assigned By -->
+<div class="col-md-3">
+    <label>Assigned By</label>
+      <select asp-for="AssignedBy" id="AssignedBy" class="form-select select2" required>
+        <option value="">-- Select Assigned By --</option>
+        @foreach (var user in users)
+        {
+            <option value="@user.userName">@user.userName</option>
+        }
+    </select>
+</div>
+
+
+                    <!-- Assigned Users -->
+                    <div class="col-md-3">
+                        <label>Assigned Users</label>
+                      <select id="AssignedUsers" class="form-select select2" multiple="multiple">
+                            @foreach (var user in users)
+                            {
+                                <option value="@user.userName">@user.userName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Client -->
+                    <div class="col-md-3">
+                        <label>Client</label>
+                        <input asp-for="Clients" class="form-control" />
+                    </div>
+
+                    <!-- Start Date -->
+                    <div class="col-md-3">
+                        <label>Start Date</label>
+                        <input type="text" id="StartDate" name="StartDate" class="form-control datepicker"
+                               value="@Model.StartDate.ToString("dd/MM/yyyy")" placeholder="DD/MM/YYYY" />
+                    </div>
+
+                    <!-- End Date -->
+                    <div class="col-md-3">
+                        <label>End Date</label>
+                        <input type="text" id="EndDate" name="EndDate" class="form-control datepicker"
+                               value="@(Model.EndDate?.ToString("dd/MM/yyyy") ?? "")" placeholder="DD/MM/YYYY" />
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-md-3">
+                        <label>Status</label>
+                        <select asp-for="Status" class="form-select select2" asp-items="Html.GetEnumSelectList<StatusEnum>()">
+                    <option value="">-- Select Status --</option>
+                </select>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="col-12">
+                        <label>Description</label>
+                        <textarea asp-for="Description" rows="3" class="form-control">@Model.Description</textarea>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary px-4">Update Work Segment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JS -->
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap-datepicker-1.9.0-dist/js/bootstrap-datepicker.js"></script>
+<script src="~/js/select2.min.js"></script>
+<script src="~/js/sweetalert2.all.min.js"></script>
+<script src="~/js/moment.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        // Initialize Select2
+        $(".select2").select2({ width: '100%' });
+
+        // Initialize datepicker
+        $(".datepicker").datepicker({
+            format: 'dd/mm/yyyy',
+            autoclose: true,
+            todayHighlight: true
+        });
+
+        // Preload dropdowns
+        $('#Location').val('@Model.Location').trigger('change');
+        $('#Department').val('@Model.Department').trigger('change');
+        $('#Status').val('@Model.Status').trigger('change');
+        $('#AssignedBy').val('@Model.AssignedBy').trigger('change');
+
+
+        // Preload multiple assigned users
+        var selectedUsers = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SelectedUserNames ?? new List<string>()));
+        $('#AssignedUsers').val(selectedUsers).trigger('change');
+
+        // AJAX form submit
+        $('#editForm').submit(function (e) {
+            e.preventDefault();
+
+            var formData = {
+                Id: $('input[name="Id"]').val(),
+                ProjectId: $('#ProjectId').val(),
+                Location: $('#Location').val(),
+                Department: $('#Department').val(),
+                SelectedUserNames: $('#AssignedUsers').val() || [],
+                Clients: $('#Clients').val(),
+               AssignedBy: $('#AssignedBy').val(),  // <-- new field
+    StartDate: moment($('#StartDate').val(), 'DD/MM/YYYY').utc().format(),
+    EndDate: moment($('#EndDate').val(), 'DD/MM/YYYY').utc().format(),
+                Status: parseInt($('#Status').val()),
+                Description: $('#Description').val()
+            };
+
+            $.ajax({
+                url: '@Url.Action("Edit", "Project")',
+                type: 'POST',
+                data: formData,
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                success: function (res) {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Work Segment updated!',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => location.href = '@Url.Action("Index", "Project")');
+                    } else {
+                        var errorMsg = res.errors ? (Array.isArray(res.errors) ? res.errors.join(", ") : JSON.stringify(res.errors)) : 'Unknown error';
+                        Swal.fire({ icon: 'error', title: 'Error', text: errorMsg });
+                    }
+                },
+                error: function () {
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update. Please try again.' });
+                }
+            });
+        });
+    });
+</script>

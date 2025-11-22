@@ -1,0 +1,191 @@
+@using TaskManagement.Models.Enums
+@model IEnumerable<TaskManagement.Models.ProjectBo>
+
+@{
+    ViewData["Title"] = "Projects";
+    var projectNames = ViewBag.ProjectLookup as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var departmentNames = ViewBag.DepartmentLookup as Dictionary<int, string>
+    ?? new Dictionary<int, string>();
+    List<RolePermessionDto> rolePermessions = ViewBag.RolePermessions;
+
+}
+
+<link rel="stylesheet" href="~/css/site.css" />
+<link rel="stylesheet" href="~/css/jquery.dataTables.min.css" />
+
+<style>
+    .badge-active {
+        background-color: #d1e7dd;
+        color: #0f5132;
+        font-weight: 600;
+    }
+
+    .badge-pending {
+        background-color: #fff3cd;
+        color: #664d03;
+        font-weight: 600;
+    }
+
+    .badge-progress {
+        background-color: #bee5eb;
+        color: #055160;
+        font-weight: 600;
+    }
+
+    .badge-complete {
+        background-color: #f8d7da;
+        color: #842029;
+        font-weight: 600;
+    }
+</style>
+
+@Html.AntiForgeryToken()
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3><i class="bi bi-cast"></i> Work Segments</h3>
+
+    @if (rolePermessions.Any(rp =>
+        rp.PrimaryActionName == "Project" && rp.SecondaryActionName == "Create-Update"))
+    {
+        <a asp-action="Create" class="btn btn-primary px-3">
+            <i class="fas fa-plus me-1"></i> Add Work Segment
+        </a>
+    }
+</div>
+
+<table class="table table-bordered align-middle" id="projectTable">
+    <thead style="background:#e2f8f5; color:#016D66;">
+        <tr>
+            <th>S.No</th>
+            <th>Work Segment</th>
+            <th>Assigned Users</th>
+            <th>Location</th>
+            <th>Department</th>
+            <th>Start Date</th>
+            <th>Status</th>
+            <th style="width:120px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            int serialNo = 1;
+        }
+        @foreach (var project in Model)
+        {
+            string projectName = projectNames.ContainsKey((int)project.ProjectId)
+            ? projectNames[(int)project.ProjectId]
+            : project.ProjectId.ToString();
+
+            <tr id="projectRow_@project.Id">
+                <td>@serialNo</td>
+                <td>@projectName</td>
+                <td>@(project.SelectedUserNames.Any() ?
+                                    string.Join(", ", project.SelectedUserNames) : "N/A")</td>
+                <td>@project.Location</td>
+                <td>
+                    @(departmentNames.ContainsKey(project.Department)
+                                    ? departmentNames[project.Department]
+                                    : "N/A")
+                </td>
+
+                <td>@project.StartDate.ToString("dd-MM-yyyy")</td>
+                <td>
+                    @switch (project.Status)
+                    {
+                        case StatusEnum.Active:
+                            <span class="badge badge-active px-3 py-1">Active</span>
+                            ;
+                            break;
+                        case StatusEnum.Pending:
+                            <span class="badge badge-pending px-3 py-1">Pending</span>
+                            ;
+                            break;
+                        case StatusEnum.InProgress:
+                            <span class="badge badge-progress px-3 py-1">In Progress</span>
+                            ;
+                            break;
+                        case StatusEnum.Completed:
+                            <span class="badge badge-complete px-3 py-1">Completed</span>
+                            ;
+                            break;
+                        default:
+                            <span class="badge badge-other px-3 py-1">@project.Status</span>
+                            ;
+                            break;
+                    }
+                </td>
+                <td class="action-btns">
+                    @if (rolePermessions.Any(rp =>
+                                    rp.PrimaryActionName == "Project" && rp.SecondaryActionName == "Create-Update"))
+                    {
+                        <a class="btn btn-secondary btn-sm" href="@Url.Action("Edit", new { id = project.Id })">
+                            <i class="bi bi-pencil-square"></i>
+                        </a>
+                    }
+
+                    @if (rolePermessions.Any(rp =>
+                                    rp.PrimaryActionName == "Project" && rp.SecondaryActionName == "Delete"))
+                    {
+                        <button class="btn btn-danger btn-sm deleteProject" data-id="@project.Id">
+                            <i class="bi bi-trash-fill"></i>
+                        </button>
+                    }
+
+
+                </td>
+            </tr>
+
+            serialNo++;
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="~/js/jquery.dataTables.min.js"></script>
+    <script src="~/js/sweetalert2.all.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            let table = new DataTable('#projectTable', {
+                ordering: false,
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                responsive: true,
+                language: {
+                    search: '<i class="bi bi-search"></i>',
+                    searchPlaceholder: 'Search projects...',
+                    paginate: { previous: '<i class="bi bi-chevron-left"></i>', next: '<i class="bi bi-chevron-right"></i>' }
+                },
+                columnDefs: [{ orderable: false, targets: 0 }]
+            });
+
+            $(document).on("click", ".deleteProject", function () {
+                var id = $(this).data("id");
+                var token = $('input[name="__RequestVerificationToken"]').val();
+
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Are you sure?',
+                    text: "This action cannot be undone!",
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.post('@Url.Action("Delete", "Project")',
+                            { id: id, __RequestVerificationToken: token },
+                            function (res) {
+                                if (res.success) {
+                                    table.row($('#projectRow_' + id)).remove().draw();
+                                    Swal.fire('Deleted!', 'Project has been deleted.', 'success');
+                                } else {
+                                    Swal.fire('Error!', res.error, 'error');
+                                }
+                            }
+                        );
+                    }
+                });
+            });
+        });
+    </script>
+}

@@ -1,0 +1,394 @@
+@* @model IEnumerable<TaskManagement.Models.ProjectModel>
+@using TaskManagement.Models
+@using System.Linq
+@using Newtonsoft.Json
+
+@{
+    Layout = null;
+    ViewData["Title"] = "Project Dashboard";
+
+    var apiUserDtos = ViewBag.Users as IEnumerable<TaskManagement.Models.ApiUserDto> ?? Enumerable.Empty<TaskManagement.Models.ApiUserDto>();
+    var users = ViewBag.Users as IEnumerable<UserModel> ?? Enumerable.Empty<UserModel>();
+    var projects = ViewBag.Projects as IEnumerable<ProjectModel> ?? Enumerable.Empty<ProjectModel>();
+    var tasks = ViewBag.Tasks as IEnumerable<TaskModel> ?? Enumerable.Empty<TaskModel>();
+    var departments = ViewBag.Departments as IEnumerable<ApiDeptDto> ?? Enumerable.Empty<ApiDeptDto>();
+    var acceptances = ViewBag.Acceptances as IEnumerable<object> ?? Enumerable.Empty<object>();
+
+    var realTasksData = new Dictionary<string, List<object>>();
+    var realProjectsData = new Dictionary<string, object>();
+    var chatMessagesData = new Dictionary<string, List<object>>();
+
+    foreach (var p in projects)
+    {
+        var projectTasks = tasks.Where(t => !string.IsNullOrEmpty(t.Projects) && t.Projects.Split(',').Contains(p.ProjectName)).ToList();
+        var taskList = new List<object>();
+
+        foreach (var task in projectTasks)
+        {
+            taskList.Add(new
+            {
+                id = task.Id,
+                name = task.TaskName,
+                description = task.Description,
+                status = task.Status,
+                dueDate = task.DueDate.ToString("yyyy-MM-dd"),
+                assignedUsers = task.AssignedUsers,
+                projects = task.Projects,
+                department = task.Department
+            });
+        }
+
+        realTasksData[p.Id.ToString()] = taskList;
+
+        realProjectsData[p.Id.ToString()] = new
+        {
+            id = p.Id,
+            name = p.ProjectName,
+            description = p.Description,
+            status = p.Status,
+            startDate = p.StartDate.ToString("yyyy-MM-dd"),
+            endDate = p.EndDate.HasValue ? p.EndDate.Value.ToString("yyyy-MM-dd") : "",
+            department = p.Department,
+            assignedUsers = p.AssignedUsers,
+            location = p.Location,
+            clients = p.Clients
+        };
+
+        chatMessagesData[p.Id.ToString()] = new List<object> {
+            new {
+                id = 1,
+                sender = "System",
+                message = $"Chat started for project {p.ProjectName}",
+                timestamp = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                type = "system"
+            }
+        };
+    }
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"]</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/sweetalert2.min.css" />
+    <link rel="stylesheet" href="~/css/select2.min.css" />
+    <link rel="stylesheet" href="~/css/Chat/Chat.css" asp-append-version="true"/>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="header-title">
+                    <i class="bi bi-rocket-takeoff"></i>
+                    <span>Project Dashboard</span>
+                </div>
+
+                <div class="header-controls">
+                    <select id="Department" class="form-select filter-select" style="width: 200px;">
+                        <option value="">All Departments</option>
+                        @foreach (var dept in departments)
+                        {
+                            <option value="@dept.SectionName">@dept.SectionName</option>
+                        }
+                    </select>
+
+                    <select class="form-select filter-select" id="userFilter" style="width: 200px;">
+                        <option value="all">All Users</option>
+                    </select>
+
+                    <div class="search-container">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="projectSearch" class="form-control search-input" placeholder="Search projects..." />
+                    </div>
+
+                    <button class="refresh-btn" id="refreshBtn" title="Refresh Dashboard">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-cards-container mb-3">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="summary-card total">
+                        <div class="summary-icon">
+                            <i class="bi bi-people"></i>
+                        </div>
+                        <div class="summary-content">
+                            <div class="summary-count" data-summary="total">0</div>
+                            <div class="summary-label">Total Users</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card completed">
+                        <div class="summary-icon">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                        <div class="summary-content">
+                            <div class="summary-count" data-summary="completed">0</div>
+                            <div class="summary-label">Completed Works</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card inprogress">
+                        <div class="summary-icon">
+                            <i class="bi bi-play-circle"></i>
+                        </div>
+                        <div class="summary-content">
+                            <div class="summary-count" data-summary="inprogress">0</div>
+                            <div class="summary-label">Active Projects</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card pending">
+                        <div class="summary-icon">
+                            <i class="bi bi-clock"></i>
+                        </div>
+                        <div class="summary-content">
+                            <div class="summary-count" data-summary="pending">0</div>
+                            <div class="summary-label">Pending</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Users Column -->
+            <div class="users-column">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="card-title">
+                            <i class="bi bi-people"></i>
+                            Active Users
+                        </div>
+                        <span class="card-total" id="totalUsersCount">0 users</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="users-grid" id="usersList">
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading users...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading users...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Projects Column -->
+            <div class="projects-column">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="card-title">
+                            <i class="bi bi-folder2-open"></i>
+                            Active Works
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <button class="btn btn-success accept-btn" onclick="showAllAcceptances()" title="View all project acceptances">
+                                <i class="bi bi-list-check"></i> View All Records
+                            </button>
+                            <span class="card-total" id="totalProjectsCount">@projects.Count() Works</span>
+                            <span id="filterStatus" class="badge bg-light text-dark"></span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="project-grid" id="projectGrid">
+                            @foreach (var p in projects)
+                            {
+                                var projectTasks = tasks.Where(t => !string.IsNullOrEmpty(t.Projects) && t.Projects.Split(',').Contains(p.ProjectName)).ToList();
+                                var totalTasks = projectTasks.Count();
+                                var completedTasks = projectTasks.Count(t => string.Equals(t.Status, "Completed", System.StringComparison.OrdinalIgnoreCase));
+                                var progress = totalTasks == 0 ? 0 : (int)Math.Round((completedTasks * 100.0) / totalTasks);
+
+                                string statusClass = "status-pending";
+                                string statusText = p.Status ?? "Pending";
+
+                                if (statusText.Equals("Active", StringComparison.OrdinalIgnoreCase))
+                                    statusClass = "status-active";
+                                else if (statusText.Equals("Completed", StringComparison.OrdinalIgnoreCase))
+                                    statusClass = "status-completed";
+
+                                <div class="project-card"
+                                     data-project-id="@p.Id"
+                                     data-project-name="@p.ProjectName"
+                                     data-project-status="@p.Status"
+                                     data-project-department="@p.Department">
+                                    <div class="project-status-badge @statusClass">
+                                        <i class="bi @(statusClass == "status-active" ? "bi-play-circle" : statusClass == "status-completed" ? "bi-check-circle" : "bi-clock")"></i> 
+                                        @statusText
+                                    </div>
+                                    <div class="project-title">@p.ProjectName</div>
+
+                                    <div class="project-meta">
+                                        <div class="project-tasks">
+                                            <i class="bi bi-list-task"></i> @completedTasks/@totalTasks Tasks
+                                        </div>
+                                    </div>
+
+                                    <div class="progress-container">
+                                        <div class="progress-label">
+                                            <span>Progress</span>
+                                            <span>@progress%</span>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar-fill" style="width:@progress%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="project-assignees">
+                                        @{
+                                            var assignedUserNames = !string.IsNullOrEmpty(p.AssignedUsers) ? p.AssignedUsers.Split(',') : new string[0];
+                                            var shown = 0;
+                                            foreach (var userName in assignedUserNames)
+                                            {
+                                                if (shown >= 3) break;
+                                                <div class="assignee-avatar" data-user-name="@userName" title="@userName">
+                                                    @(!string.IsNullOrEmpty(userName) ? userName.Substring(0,1).ToUpper() : "U")
+                                                </div>
+                                                shown++;
+                                            }
+                                            if (assignedUserNames.Length > 3)
+                                            {
+                                                <div class="more-assignees" title="@(assignedUserNames.Length - 3) more">+@(assignedUserNames.Length - 3)</div>
+                                            }
+                                        }
+                                    </div>
+
+                                    <div class="project-footer">
+                                        <span class="acceptance-badge pending">
+                                            <i class="bi bi-clock-history"></i> Pending
+                                        </span>
+                                        <div class="project-actions">
+                                            <div class="action-icon view-project" onclick="showProjectDetails('@p.Id')" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </div>
+                                            <div class="action-icon view-acceptance" onclick="showAcceptanceModal('@p.Id','@p.ProjectName')" title="Manage Acceptances">
+                                                <i class="bi bi-person-check"></i>
+                                            </div>
+                                            <div class="action-icon view-chat" onclick="openProjectChat('@p.Id','@p.ProjectName')" title="Project Chat">
+                                                <i class="bi bi-chat-dots"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal fade" id="projectDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <i class="bi bi-diagram-3"></i>
+                        <span id="projectDetailsTitle">Project Details</span>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="modal-status-badge" id="projectModalStatus"></div>
+                </div>
+                <div id="projectDetailsContent" class="modal-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="taskDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <i class="bi bi-list-task"></i>
+                        <span id="taskDetailsTitle">Task Details</span>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="modal-status-badge" id="taskModalStatus"></div>
+                </div>
+                <div id="taskDetailsContent" class="modal-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="acceptanceModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <i class="bi bi-person-check"></i>
+                        <span id="acceptanceTitle">Project Acceptances</span>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div id="acceptanceContent" class="modal-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="allAcceptancesModal" tabindex="-1">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <i class="bi bi-list-check"></i>
+                        <span id="allAcceptancesTitle">All Acceptances</span>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div id="allAcceptancesContent" class="modal-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Panel -->
+    <div class="chat-panel" id="chatPanel">
+        <div class="chat-header">
+            <div class="chat-title"><i class="bi bi-chat-dots"></i> <span id="chatTitle">Project Chat</span></div>
+            <button class="chat-close" id="closeChat">&times;</button>
+        </div>
+        <div class="chat-members" id="chatMembers"></div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-container">
+            <div class="chat-input-wrapper">
+                <input type="text" id="chatInput" class="chat-input" placeholder="Type a message..." />
+                <button class="send-btn" id="sendChatBtn"><i class="bi bi-send-fill"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-overlay" id="chatOverlay"></div>
+
+    <script>
+        window.serverData = {
+            realTasks: @Html.Raw(JsonConvert.SerializeObject(realTasksData)),
+            realProjects: @Html.Raw(JsonConvert.SerializeObject(realProjectsData)),
+            chatMessages: @Html.Raw(JsonConvert.SerializeObject(chatMessagesData)),
+            apiUsers: @Html.Raw(JsonConvert.SerializeObject(apiUserDtos.Any() ? apiUserDtos : users)),
+            dbAcceptances: @Html.Raw(JsonConvert.SerializeObject(acceptances)),
+            departments: @Html.Raw(JsonConvert.SerializeObject(departments.Select(d => d.SectionName).ToArray()))
+        };
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/jquery-3.6.0.min.js"></script>
+    <script src="~/js/select2.min.js"></script>
+    <script src="~/js/sweetalert2.all.min.js"></script>
+    <script src="~/js/Dashboard/Chat.js" asp-append-version="true"></script>
+</body>
+</html> *@

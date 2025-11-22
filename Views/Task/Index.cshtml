@@ -1,0 +1,201 @@
+@using TaskManagement.Models.Enums
+@model IEnumerable<TaskManagement.Models.TaskBo>
+
+@{
+    ViewData["Title"] = "Tasks";
+    var tasks = Model ?? Enumerable.Empty<TaskManagement.Models.TaskBo>();
+    var departmentNames = ViewBag.DepartmentLookup as Dictionary<int, string>
+    ?? new Dictionary<int, string>();
+
+    var projectNames = ViewBag.ProjectLookup as Dictionary<int, string>
+    ?? new Dictionary<int, string>();
+    List<RolePermessionDto> rolePermessions = ViewBag.RolePermessions;
+
+}
+
+
+
+@Html.AntiForgeryToken()
+
+<link rel="stylesheet" href="~/css/site.css" />
+<link rel="stylesheet" href="~/css/select2.min.css" />
+<link rel="stylesheet" href="~/css/jquery.dataTables.min.css" />
+
+<style>
+    .badge-active {
+        background-color: #f8d7da;
+        color: #b02a37;
+        font-weight: 600;
+    }
+
+    .badge-complete {
+        background-color: #f8e6d3;
+        color: #ff8002;
+        font-weight: 600;
+    }
+
+    .badge-onhold {
+        background-color: #fff3cd;
+        color: #856404;
+        font-weight: 600;
+    }
+
+    .badge-other {
+        background-color: #e9ecef;
+        color: #495057;
+        font-weight: 600;
+    }
+
+    .action-btns a,
+    .action-btns button {
+        margin-right: 5px;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3><i class="bi bi-person-workspace"></i> Tasks</h3>
+    @if (rolePermessions.Any(rp =>
+        rp.PrimaryActionName == "task" && rp.SecondaryActionName == "Create-Update"))
+    {
+        <a asp-action="Create" class="btn btn-primary px-3">
+            <i class="fas fa-plus me-1"></i> Add Task
+        </a>
+    }
+</div>
+
+<table class="table table-bordered align-middle" id="taskTable">
+    <thead style="background:#e2f8f5; color:#016D66;">
+        <tr>
+            <th>S.No</th>
+            <th>Task Name</th>
+            <th>Work Segment</th>
+            <th>Assigned Users</th>
+            <th>Department</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th style="width:120px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            var serialNo = 1;
+        }
+        @foreach (var task in tasks)
+        {
+            <tr id="taskRow_@task.Id">
+                <td>@serialNo</td>
+                <td>@task.TaskName</td>
+                <td>
+                    @(projectNames.ContainsKey(task.ProjectId)
+                                    ? projectNames[task.ProjectId]
+                                    : "N/A")
+                </td>
+
+                <td>@(task.SelectedUserNames.Any() ? string.Join(", ", task.SelectedUserNames) : "N/A")</td>
+                <td>
+                    @(departmentNames.ContainsKey(task.Department)
+                                    ? departmentNames[task.Department]
+                                    : "N/A")
+                </td>
+
+
+                <td>@task.DueDate.ToString("dd-MM-yyyy")</td>
+                <td>
+                    @switch (task.Status)
+                    {
+                        case StatusEnum.Active:
+                            <span class="badge badge-active px-3 py-2">Active</span>
+                            ;
+                            break;
+                        case StatusEnum.Pending:
+                            <span class="badge badge-onhold px-3 py-2">Pending</span>
+                            ;
+                            break;
+                        case StatusEnum.InProgress:
+                            <span class="badge badge-onhold px-3 py-2">In Progress</span>
+                            ;
+                            break;
+                        case StatusEnum.Completed:
+                            <span class="badge badge-complete px-3 py-2">Completed</span>
+                            ;
+                            break;
+                        default:
+                            <span class="badge badge-other px-3 py-2">@task.Status</span>
+                            ;
+                            break;
+                    }
+                </td>
+                <td class="action-btns">
+                    @if (rolePermessions.Any(rp =>
+                                    rp.PrimaryActionName == "task" && rp.SecondaryActionName == "Create-Update"))
+                    {
+                        <a asp-action="Edit" asp-route-id="@task.Id" class="btn btn-secondary btn-sm" title="Edit">
+                            <i class="bi bi-pencil-square"></i>
+                        </a>
+                    }
+
+                    @if (rolePermessions.Any(rp =>
+                                    rp.PrimaryActionName == "Task" && rp.SecondaryActionName == "Delete"))
+                    {
+                        <button class="btn btn-danger btn-sm deleteTask" data-id="@task.Id" title="Delete">
+                            <i class="bi bi-trash-fill"></i>
+                        </button>
+                    }
+
+
+                </td>
+            </tr>
+            serialNo++;
+        }
+    </tbody>
+</table>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/js/select2.min.js"></script>
+<script src="~/js/sweetalert2.all.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="~/js/jquery.dataTables.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        let table = $('#taskTable').DataTable({
+            ordering: false,
+            pageLength: 10,
+            lengthMenu: [10, 25, 50, 100],
+            responsive: true,
+            language: {
+                search: '<i class="bi bi-search"></i>',
+                searchPlaceholder: 'Search tasks...',
+                paginate: { previous: '<i class="bi bi-chevron-left"></i>', next: '<i class="bi bi-chevron-right"></i>' }
+            },
+            columnDefs: [{ orderable: false, targets: 0 }]
+        });
+
+        $('.select2').select2({ width: '100%' });
+
+        $(document).on("click", ".deleteTask", function () {
+            var id = $(this).data("id");
+            var token = $('input[name="__RequestVerificationToken"]').val();
+
+            Swal.fire({
+                icon: 'warning',
+                title: 'Are you sure?',
+                text: "This action will soft-delete the task.",
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('@Url.Action("Delete", "Task")', { id: id, __RequestVerificationToken: token }, function (res) {
+                        if (res.success) {
+                            table.row($('#taskRow_' + id)).remove().draw();
+                            Swal.fire('Deleted!', 'Task has been deleted.', 'success');
+                        } else {
+                            Swal.fire('Error!', res.error || 'Unable to delete task.', 'error');
+                        }
+                    });
+                }
+            });
+        });
+    });
+</script>

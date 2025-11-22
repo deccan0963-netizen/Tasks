@@ -1,0 +1,308 @@
+<!-- Team Modal (Bootstrap) -->
+<div class="modal fade" id="ViewTeamModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <!-- Header -->
+            <div class="modal-header">
+                <h5 class="modal-title">
+                   <i class="bi bi-people"></i> Task Details
+                    <span class="status-badge" id="t-status-badge">Loading...</span>
+                </h5>
+                <button type="button" class="btn-close-custom" data-bs-dismiss="modal">✕</button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body">
+                <div id="team-body">
+                    <div id="project-info" class="project-info">
+                        <div class="project-name">Loading...</div>
+                        <div class="project-desc"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><i class="bi bi-list-task"></i>Task Assignments</div>
+                        <div class="card-body">
+                            <ul class="list-group" id="team-task-list">
+                                <li class="list-group-item">Loading tasks...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    * {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    }
+
+    :root {
+        --primary: #1e3c72;
+        --secondary: #2a5298;
+        --accent: #ff8400;
+        --white: #ffffff;
+        --light: #f8fafc;
+        --gray: #94a3b8;
+        --success: #40a075;
+        --pending: #f59e0b;
+        --border: #e2e8f0;
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border-bottom: none;
+        padding: 12px 16px;
+        position: relative;
+    }
+
+    .modal-title {
+        font-weight: 600;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .modal-title .status-badge {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        margin-left: 8px;
+    }
+
+    .modal-content {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        border: none;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-body {
+        padding: 16px;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .modal-body::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .modal-body::-webkit-scrollbar-track {
+        background: var(--light);
+        border-radius: 4px;
+        margin: 4px;
+    }
+
+    .modal-body::-webkit-scrollbar-thumb {
+        background: var(--gray);
+        border-radius: 4px;
+        border: 2px solid var(--light);
+    }
+
+    .modal-body::-webkit-scrollbar-thumb:hover {
+        background: var(--primary);
+    }
+
+    .card {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-header {
+        background: var(--light);
+        border-bottom: 1px solid var(--border);
+        padding: 8px 12px;
+        font-weight: 600;
+        color: var(--primary);
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .card-body {
+        padding: 12px;
+    }
+
+    .list-group-item {
+        border: none;
+        border-bottom: 1px solid var(--border);
+        padding: 12px;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+
+    .list-group-item:hover {
+        background-color: var(--light);
+    }
+
+    .btn-close-custom {
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.2rem;
+        cursor: pointer;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+    }
+
+    .btn-close-custom:hover {
+        opacity: 1;
+    }
+
+    .accept-btn {
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .accept-btn:hover {
+        background: #e07a00;
+        transform: translateY(-1px);
+    }
+
+    .project-info {
+        background: var(--light);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 16px;
+        border-left: 4px solid var(--accent);
+    }
+
+    .project-name {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: var(--primary);
+        margin-bottom: 4px;
+    }
+
+    .project-desc {
+        font-size: 0.85rem;
+        color: var(--gray);
+    }
+
+    .member-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .member-name {
+        font-weight: 600;
+        color: var(--primary);
+    }
+
+    .due-date {
+        font-size: 0.75rem;
+        color: var(--gray);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .status-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .member-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.8rem;
+        margin-right: 8px;
+    }
+
+    .member-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .task-card {
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+        position: relative;
+    }
+
+    .show-more-btn {
+        background: none;
+        border: 1px solid var(--primary);
+        color: var(--primary);
+        cursor: pointer;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-top: 8px;
+        padding: 4px 12px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .show-more-btn:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    .more-content {
+        display: none;
+        margin-top: 12px;
+        padding: 12px;
+        background: #f8fafc;
+        border-radius: 6px;
+        border-left: 3px solid var(--accent);
+    }
+
+    .detail-line {
+        padding: 4px 0;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 0.8rem;
+        line-height: 1.4;
+    }
+
+    .detail-line:last-child {
+        border-bottom: none;
+    }
+
+    .detail-line strong {
+        color: var(--primary);
+        min-width: 80px;
+        display: inline-block;
+    }
+
+    .status-container {
+        margin-top: 6px;
+    }
+</style>

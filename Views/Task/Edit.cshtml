@@ -1,0 +1,247 @@
+@model TaskManagement.Models.TaskBo
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using TaskManagement.Models.Enums
+
+@{
+    ViewData["Title"] = "Edit Task";
+
+    // Preloaded dropdown data
+    var departments = ViewBag.Departments as List<ApiDeptDto> ?? new();
+    var users = ViewBag.Users as List<ApiUserDto> ?? new();
+    var selectedUsers = Model.SelectedUserNames ?? new List<string>();
+
+    // Enum dropdowns
+    var projects = Enum.GetValues(typeof(ProjectEnum))
+    .Cast<ProjectEnum>()
+    .Select(e => new SelectListItem { Value = ((int)e).ToString(), Text = e.ToString() })
+    .ToList();
+
+    var statuses = Enum.GetValues(typeof(StatusEnum))
+    .Cast<StatusEnum>()
+    .Select(e => new SelectListItem { Value = ((int)e).ToString(), Text = e.ToString() })
+    .ToList();
+}
+
+<!-- CSS -->
+<link href="~/css/select2.min.css" rel="stylesheet" />
+<link href="~/lib/bootstrap-datepicker-1.9.0-dist/css/bootstrap-datepicker.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="~/css/site.css" />
+
+<style>
+    .form-control,
+    .form-select,
+    .select2-container .select2-selection--single,
+    .select2-container .select2-selection--multiple {
+        height: 40px !important;
+        min-height: 40px !important;
+        border-radius: 6px !important;
+        border: 1px solid #c5d9f0 !important;
+        font-size: 0.95rem;
+    }
+
+    label {
+        color: #1e3c72 !important;
+        font-weight: 500;
+    }
+
+    .btn-primary {
+        background-color: #2a5298 !important;
+        border-color: #2a5298 !important;
+    }
+
+    .btn-primary:hover {
+        background-color: #1e3c72 !important;
+    }
+
+    .custom-form-card {
+        border: 1px solid #c5d9f0 !important;
+        border-radius: 8px;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="card custom-form-card shadow-sm w-100" style="max-width:1200px;">
+        <div class="card-body">
+            <div class="d-flex align-items-center mb-4">
+                <a asp-action="Index" class="me-2 text-decoration-none back-arrow">
+                    <i class="bi bi-arrow-left-circle fa-lg"></i>
+                </a>
+                <h4 class="fw-bold mb-0">Edit Task</h4>
+            </div>
+
+            @Html.AntiForgeryToken()
+            <form id="editTaskForm">
+                <input asp-for="Id" type="hidden" />
+
+                <div class="row g-3">
+                    <!-- Task Name -->
+                    <div class="col-md-3">
+                        <label asp-for="TaskName"></label>
+                        <input asp-for="TaskName" class="form-control" required />
+                    </div>
+
+                    <!-- Department -->
+                    <div class="col-md-3">
+                        <label>Department</label>
+                        <select asp-for="Department" id="Department" class="form-select select2" required>
+                            <option value="">-- Select Department --</option>
+                            @foreach (var dept in departments)
+                            {
+                                <option value="@dept.SectionId">@dept.SectionName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Work Segment (ProjectEnum) -->
+                    <div class="col-md-3">
+                        <label>Work Segment</label>
+                        <select asp-for="ProjectId" id="ProjectId" class="form-select select2" required>
+                            <option value="">-- Select Project --</option>
+                            @foreach (var proj in projects)
+                            {
+                                <option value="@proj.Value">@proj.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <!-- Assigned By -->
+                    <div class="col-md-3">
+                        <label>Assigned By</label>
+                        <select asp-for="AssignedBy" id="AssignedBy" class="form-select select2" required>
+                            <option value="">-- Select Assigned By --</option>
+                            @foreach (var user in users)
+                            {
+                                <option value="@user.userName">@user.userName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Assigned Users -->
+                    <div class="col-md-3">
+                        <label>Assigned Users</label>
+                        <select id="AssignedUsers" class="form-select select2" multiple="multiple">
+                            @foreach (var user in users)
+                            {
+                                <option value="@user.userName">@user.userName</option>
+                            }
+                        </select>
+                    </div>
+
+
+
+                    <!-- Due Date -->
+                    <div class="col-md-3">
+                        <label asp-for="DueDate"></label>
+                        <input asp-for="DueDate" type="text" id="DueDate" class="form-control datepicker"
+                            value="@Model.DueDate.ToString("dd/MM/yyyy")" required />
+                    </div>
+
+
+                    <!-- Status -->
+                    <div class="col-md-3">
+                        <label>Status</label>
+                        <select asp-for="Status" id="Status" class="form-select select2">
+                            <option value="">-- Select Status --</option>
+                            @foreach (var s in statuses)
+                            {
+                                <option value="@s.Value">@s.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Completed Date -->
+                    <div class="col-md-3">
+                        <label asp-for="CompletedDate">Completed Date</label>
+                        <input asp-for="CompletedDate" class="form-control datepicker" type="text" />
+                        <span asp-validation-for="CompletedDate" class="text-danger"></span>
+                    </div>
+
+                </div>
+
+                <!-- Description -->
+                <div class="row g-3 mt-3">
+                    <div class="col-12">
+                        <label asp-for="Description"></label>
+                        <textarea asp-for="Description" class="form-control">@Model.Description</textarea>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary px-4">Update Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JS -->
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap-datepicker-1.9.0-dist/js/bootstrap-datepicker.js"></script>
+<script src="~/js/select2.min.js"></script>
+<script src="~/js/sweetalert2.all.min.js"></script>
+<script src="~/js/moment.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $(".select2").select2({ width: '100%' });
+        $(".datepicker").datepicker({ format: 'dd/mm/yyyy', autoclose: true, todayHighlight: true });
+
+        // ✅ Preselect dropdowns
+        $('#Department').val('@Model.Department').trigger('change');
+        $('#ProjectId').val('@((int)Model.ProjectId)').trigger('change');
+        $('#Status').val('@((int)Model.Status)').trigger('change');
+        $('#AssignedBy').val('@Model.AssignedBy').trigger('change');
+
+        $('#CompletedDate').val(
+            '@(Model.CompletedDate.HasValue? Model.CompletedDate.Value.ToString("dd/MM/yyyy") : "")'
+        );
+
+
+        // ✅ Preselect assigned users
+        var preSelectedUsers = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(selectedUsers));
+        $('#AssignedUsers').val(preSelectedUsers).trigger('change');
+
+        // ✅ AJAX form submit
+        $('#editTaskForm').submit(function (e) {
+            e.preventDefault();
+
+            var data = {
+                Id: $('input[name="Id"]').val(),
+                TaskName: $('input[name="TaskName"]').val(),
+                Department: $('#Department').val(),
+                ProjectId: parseInt($('#ProjectId').val()),
+                SelectedUserNames: $('#AssignedUsers').val() || [],
+                AssignedBy: $('#AssignedBy').val(),
+              CompletedDate: $('#CompletedDate').val()
+    ? moment($('#CompletedDate').val(), 'DD/MM/YYYY').format('YYYY-MM-DD')
+    : null,
+
+               DueDate: moment($('#DueDate').val(), 'DD/MM/YYYY').format('YYYY-MM-DD'),
+
+                Status: parseInt($('#Status').val()),
+                Description: $('textarea[name="Description"]').val()
+            };
+
+            $.ajax({
+                url: '@Url.Action("Edit", "Task")',
+                type: 'POST',
+                data: data,
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                success: function (res) {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Task updated!',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => window.location.href = '@Url.Action("Index", "Task")');
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: res.errors ? res.errors.join(", ") : "Unknown error" });
+                    }
+                },
+                error: function () {
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update. Try again.' });
+                }
+            });
+        });
+    });
+</script>

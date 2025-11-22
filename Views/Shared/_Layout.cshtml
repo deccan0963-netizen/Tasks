@@ -1,0 +1,416 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - TaskManagement</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+    <link rel="stylesheet" href="~/css/select2.min.css" />
+    <link rel="stylesheet" href="~/css/jquery.dataTables.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-datetimepicker-0.0.11/css/bootstrap-datetimepicker.min.css" />
+    <link rel="stylesheet" href="~/lib/Apex/apexcharts.css" />
+    <link rel="stylesheet" href="~/css/sweetalert2.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+
+    @await RenderSectionAsync("Styles", required: false)
+
+    <style>
+        :root {
+            --primary-blue: #1e3c72;
+            --secondary-blue: #2a5298;
+            --accent-orange: #f77f00;
+            --light-orange: #ff9e40;
+            --dark-blue: #0d1b3e;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f9f9fc !important;
+            margin: 0 !important;
+            overflow: hidden; 
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            height: 100vh;
+            width: 200px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: linear-gradient(180deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            padding-top: 15px;
+            overflow: hidden;
+            z-index: 1050;
+            transition: width 0.3s ease;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Collapsed sidebar */
+        .sidebar.collapsed {
+            width: 70px;
+        }
+
+        .sidebar.collapsed .nav-link span,
+        .sidebar.collapsed .sidebar-header span {
+            display: none;
+        }
+
+        /* Background shapes */
+        .sidebar::before,
+        .sidebar::after {
+            content: "";
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 0;
+        }
+
+        .sidebar::before {
+            width: 200px;
+            height: 200px;
+            bottom: -60px;
+            left: -60px;
+        }
+
+        .sidebar::after {
+            width: 120px;
+            height: 120px;
+            top: 20%;
+            right: -40px;
+        }
+
+        .sidebar-header {
+            font-size: 1.5rem;
+            font-weight: 800;
+            text-align: center;
+            padding: 18px 8px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            white-space: nowrap;
+            transition: color 0.3s ease;
+            color: white;
+        }
+
+        .sidebar .nav {
+            position: relative;
+            z-index: 1;
+            padding: 0;
+            margin-top: 10px;
+        }
+
+        .sidebar .nav-link {
+            color: #e6f0ff;
+            padding: 12px 18px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            margin: 6px 12px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .sidebar .nav-link i {
+            font-size: 18px;
+            width: 22px;
+            text-align: center;
+            transition: color 0.3s ease, transform 0.3s ease;
+        }
+
+        /* Hover & touch effect */
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link:focus {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .sidebar .nav-link:hover i,
+        .sidebar .nav-link:focus i {
+            color: var(--light-orange);
+            transform: scale(1.2);
+        }
+
+        .sidebar .nav-link.active {
+            background: var(--accent-orange);
+            color: var(--primary-blue);
+            font-weight: 600;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar .nav-link.active i {
+            color: var(--accent-orange);
+            
+        }
+
+        /* Content */
+        .content {
+            margin-left: 200px;
+            transition: margin-left 0.3s ease;
+            min-height: 60vh;
+            height: 100vh; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content.expanded {
+            margin-left: 50px;
+        }
+
+        .top-navbar {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 6px 18px; 
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 50px; 
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: var(--primary-blue);
+            font-size: 22px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+
+        .toggle-btn:hover {
+            background-color: rgba(30, 60, 114, 0.1);
+        }
+
+        .toggle-btn.open {
+            transform: rotate(180deg);
+        }
+
+        .page-content {
+            padding: 20px;
+            overflow-y: auto; 
+            flex-grow: 1;
+            background-color: #f9f9fc;
+        }
+
+        .page-content::-webkit-scrollbar {
+            width: 6px; 
+        }
+
+        .page-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .page-content::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+
+        .page-content::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .page-content {
+            scrollbar-width: thin;
+            scrollbar-color: #c1c1c1 #f1f1f1;
+        }
+
+        .top-navbar .notification i,
+        .top-navbar .profile-dropdown i {
+            font-size: 18px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: var(--primary-blue);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .top-navbar .notification i:hover,
+        .top-navbar .profile-dropdown i:hover {
+            color: var(--accent-orange);
+            background-color: rgba(247, 127, 0, 0.1);
+        }
+
+        .top-navbar .notification {
+            position: relative;
+            margin-right: 15px;
+        }
+
+        .top-navbar .notification .badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--accent-orange);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 600;
+            padding: 2px 4px;
+            border-radius: 50%;
+        }
+
+        /* Profile dropdown menu */
+        .profile-dropdown {
+            position: relative;
+        }
+
+        .profile-dropdown-menu {
+            position: absolute;
+            right: 0;
+            top: 38px; 
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            min-width: 150px;
+            display: none;
+            z-index: 100;
+            border: 1px solid #e5e7eb;
+        }
+
+        .profile-dropdown-menu a {
+            display: block;
+            padding: 10px 15px;
+            color: var(--dark-blue);
+            font-weight: 500;
+            text-decoration: none;
+            transition: background 0.2s ease;
+        }
+
+        .profile-dropdown-menu a:hover {
+            background: rgba(30, 60, 114, 0.1);
+            color: var(--primary-blue);
+        }
+
+        .profile-dropdown.show .profile-dropdown-menu {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>Tasks</span>
+        </div>
+        <ul class="nav flex-column">
+        
+            <li>
+                <a asp-controller="Project" asp-action="Index" class="nav-link">
+                    <i class="fa-solid fa-users"></i> <span>Work Segments</span>
+                </a>
+            </li>
+            <li>
+                <a asp-controller="Task" asp-action="Index" class="nav-link">
+                    <i class="fa-solid fa-calendar-days"></i> <span>Task</span>
+                </a>
+            </li>
+            <li>
+                <a asp-controller="ManageTasks" asp-action="Index" class="nav-link">
+                    <i class="fa-solid fa-envelope"></i> <span>ManageTasks</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div id="content" class="content">
+        <div class="top-navbar">
+            <button id="toggleBtn" class="toggle-btn"><i class="fas fa-angle-left"></i></button>
+            <div class="d-flex align-items-center">
+                <div class="notification position-relative">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge">3</span>
+                </div>
+
+                <div class="profile-dropdown">
+                    <i class="fas fa-user-circle"></i>
+                    <div class="profile-dropdown-menu">
+                        <a href="#">Profile</a>
+                        <a href="#">Settings</a>
+                        <a href="#">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-content">
+            @RenderBody()
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="~/js/jquery-3.7.1.js"></script>
+    <script src="~/js/jquery.dataTables.min.js"></script>
+    <script src="~/js/dataTables.buttons.min.js"></script>
+    <script src="~/js/buttons.html5.min.js"></script>
+    <script src="~/js/sweetalert2.all.min.js"></script>
+    <script src="~/js/select2.min.js"></script>
+    <script src="~/js/alert.js"></script>
+    <script src="/js/moment.min.js"></script>
+    <script src="~/lib/bootstrap-datetimepicker-0.0.11/js/bootstrap-datetimepicker.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/Apex/apexcharts.min.js"></script>
+    <script src="~/js/site.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+        const toggleBtn = document.getElementById("toggleBtn");
+        const sidebar = document.getElementById("sidebar");
+        const content = document.getElementById("content");
+
+        toggleBtn.addEventListener("click", () => {
+            sidebar.classList.toggle("collapsed");
+            content.classList.toggle("expanded");
+
+            toggleBtn.classList.toggle("open");
+            const icon = toggleBtn.querySelector("i");
+            if (sidebar.classList.contains("collapsed")) {
+                icon.classList.replace("fa-angle-left", "fa-angle-right");
+            } else {
+                icon.classList.replace("fa-angle-right", "fa-angle-left");
+            }
+        });
+        
+        // Profile dropdown functionality
+        document.querySelector('.profile-dropdown').addEventListener('click', function() {
+            this.classList.toggle('show');
+        });
+        
+        // Close dropdown when clicking outside
+        window.addEventListener('click', function(e) {
+            if (!e.target.matches('.profile-dropdown i')) {
+                const dropdown = document.querySelector('.profile-dropdown');
+                if (dropdown.classList.contains('show')) {
+                    dropdown.classList.remove('show');
+                }
+            }
+        });
+    </script>
+    <environment exclude="Development">
+        <script src="~/aspnetcore-browser-refresh.js" asp-append-version="true"></script>
+    </environment>
+</body>
+</html>

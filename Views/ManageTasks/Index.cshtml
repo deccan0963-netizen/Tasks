@@ -1,0 +1,220 @@
+@using TaskManagement.Models.Enums
+@{
+    Layout = null;
+    var users = ViewBag.Users as List<TaskManagement.Models.ApiUserDto> ?? new List<TaskManagement.Models.ApiUserDto>();
+    var projects = ViewBag.Projects as List<TaskManagement.Models.ProjectBo> ?? new List<TaskManagement.Models.ProjectBo>();
+    var departments = ViewBag.Departments as List<TaskManagement.Models.ApiDeptDto> ?? new
+    List<TaskManagement.Models.ApiDeptDto>();
+    List<RolePermessionDto> rolePermessions = ViewBag.RolePermessions;
+}
+
+<title>WorkSegment Pro</title>
+<link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+<link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+<link rel="stylesheet" href="~/css/sweetalert2.min.css">
+<link rel="stylesheet" href="~/css/ManageTasks/Index.css">
+
+<style>
+    .task-status-counts {
+        display: flex;
+        gap: 6px;
+        margin: 8px 0;
+        flex-wrap: wrap;
+    }
+
+    .task-count-badge {
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 500;
+        background-color: #f8fafc;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+    }
+
+    .pending-count {
+        background-color: #fef3c7;
+        color: #92400e;
+        border-color: #fbbf24;
+    }
+
+    .inprogress-count {
+        background-color: #dbeafe;
+        color: #1e40af;
+        border-color: #60a5fa;
+    }
+
+    .completed-count {
+        background-color: #dcfce7;
+        color: #166534;
+        border-color: #4ade80;
+    }
+
+
+    .progress-container {
+        width: 100%;
+        height: 5px;
+        background: #e2e8f0;
+        border-radius: 6px;
+        overflow: hidden;
+        position: relative;
+        margin: 6px 0;
+    }
+
+    .progress-bar {
+        height: 100%;
+        border-radius: 6px;
+        position: relative;
+        transition: width 0.6s ease-in-out;
+        background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    }
+
+    .progress-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2px;
+    }
+
+    .progress-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+    }
+
+    .project-progress-value {
+        font-size: 12px;
+        font-weight: 700;
+        transition: all 0.3s ease;
+    }
+
+    .progress-stats {
+        text-align: right;
+        margin-top: 2px;
+    }
+
+    .project-progress-section {
+        background: #f8fafc;
+        padding: 8px 10px;
+        border-radius: 6px;
+        margin: 8px 0;
+        border: 1px solid #e2e8f0;
+    }
+
+    .progress-stats small {
+        font-size: 10px;
+    }
+
+    .project-card {
+        padding: 12px;
+    }
+
+    .project-meta {
+        margin-top: 8px;
+    }
+
+    .user-project-count-badge {
+        background: #1e3c72;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    /* Small avatars for multiple users */
+    .task-user-avatar-small,
+    .member-avatar-small,
+    .history-member-avatar-small {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #1e3c72);
+        color: white;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 600;
+        margin-right: 4px;
+        border: 2px solid white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+<div class="app-container">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>Team Members</h1>
+            <div class="avatar">JS</div>
+        </div>
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-box" placeholder="Search team members...">
+        </div>
+        <div class="section-header">Active Users (<span id="userCount">0</span>)</div>
+
+        <div class="user-list-container" id="userList">
+            <div class="user-item active" data-user="all">
+                <div class="user-avatar">All</div>
+                <div>
+                    <div style="font-weight:600;">All Projects</div>
+                    <div style="font-size:12px; color:#94a3b8;">Show all projects</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="content-header">
+            <h1>WorkSegment</h1>
+            <div class="header-actions">
+                <div class="project-filters">
+                    <button class="filter-btn active">All</button>
+                    <button class="filter-btn">Active</button>
+                    <button class="filter-btn">Completed</button>
+                </div>
+                @if(rolePermessions.Any(rp => rp.PermissionId == 16))
+                {
+                    <a asp-controller="Project" asp-action="Create" class="btn btn-pending new-project-btn">
+                        <i class="bi bi-plus-lg"></i> New Project
+                    </a>
+                }
+
+
+                @* <a asp-controller="Project" asp-action="Create" class="btn btn-pending new-project-btn">
+                <i class="bi bi-plus-lg"></i> New Project
+            </a> *@
+
+
+            </div>
+        </div>
+
+        <div class="projects-section">
+            <div class="section-header">
+                <div class="section-title">Active WorkSegment (<span id="projectCount">0</span>)</div>
+                <a href="#" class="view-all">View All →</a>
+            </div>
+            <div class="projects-grid" id="projectsGrid"></div>
+        </div>
+    </div>
+</div>
+
+@Html.Partial("~/Views/ManageTasks/ViewTeamModal.cshtml")
+@Html.Partial("~/Views/ManageTasks/ProjectViewModal.cshtml")
+@Html.Partial("~/Views/ManageTasks/historymodal.cshtml")
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/sweetalert2.all.min.js"></script>
+<script>
+    var users = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(users));
+    var projects = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(projects));
+    var departments = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(departments));
+    var ProjectEnum = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Enum.GetValues(typeof(ProjectEnum)).Cast<ProjectEnum>().ToDictionary(x => x.ToString(), x => (int)x)));
+    var StatusEnum = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Enum.GetValues(typeof(StatusEnum)).Cast<StatusEnum>().ToDictionary(x => x.ToString(), x => (int)x)));
+</script>
+<script src="~/js/ManageTasks/Index.js"></script>
