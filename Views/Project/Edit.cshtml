@@ -7,24 +7,25 @@
 
     var users = ViewBag.Users as List<ApiUserDto> ?? new List<ApiUserDto>();
     var departments = ViewBag.Departments as List<ApiDeptDto> ?? new List<ApiDeptDto>();
+    var concerns = ViewBag.Concerns as List<ApiConcernDto> ?? new List<ApiConcernDto>();
 
     var locationList = Enum.GetValues(typeof(LocationEnum))
-        .Cast<LocationEnum>()
-        .Select(e => new SelectListItem { Value = e.ToString(), Text = e.ToString() });
+    .Cast<LocationEnum>()
+    .Select(e => new SelectListItem { Value = e.ToString(), Text = e.ToString() });
 
     var statusList = new List<SelectListItem>
-    {
-        new SelectListItem { Value = "0", Text = "Active" },
-        new SelectListItem { Value = "1", Text = "Pending" },
-        new SelectListItem { Value = "2", Text = "In Progress" },
-        new SelectListItem { Value = "3", Text = "Completed" }
-    };
+{
+new SelectListItem { Value = "0", Text = "Active" },
+new SelectListItem { Value = "1", Text = "Pending" },
+new SelectListItem { Value = "2", Text = "In Progress" },
+new SelectListItem { Value = "3", Text = "Completed" }
+};
 
     var userList = users.Select(u => new SelectListItem
     {
         Value = u.userName,
         Text = u.userName,
-        Selected = Model.SelectedUserNames != null && Model.SelectedUserNames.Contains(u.userName)
+        Selected = Model.SelectedUserNames != null && Model.SelectedUserNames.Contains(u.id)
     }).ToList();
 }
 
@@ -34,28 +35,93 @@
 <link rel="stylesheet" href="~/css/site.css" />
 
 <style>
-    .form-control, .form-select, .select2-container .select2-selection--single, .select2-container .select2-selection--multiple {
-        height: 40px !important; min-height: 40px !important; border-radius: 6px !important;
-        border: 1px solid #c5d9f0 !important; font-size: 0.95rem;
+    .form-control,
+    .form-select,
+    .select2-container .select2-selection--single,
+    .select2-container .select2-selection--multiple {
+        height: 40px !important;
+        min-height: 40px !important;
+        border-radius: 6px !important;
+        border: 1px solid #c5d9f0 !important;
+        font-size: 0.95rem;
     }
-    .select2-container--default .select2-selection--multiple { min-height: 40px !important; height: auto !important; display: flex; align-items: center; padding: 2px 4px; }
-    .custom-form-card { border: 1px solid #c5d9f0 !important; border-radius: 8px; }
-    .custom-form-card .card-body { padding: 2rem; }
-    .back-arrow i { color: #2a5298 !important; font-size: 1.5rem; }
-    .back-arrow:hover i { color: #1e3c72 !important; }
-    .back-arrow { display: inline-flex; align-items: center; padding: 5px; border-radius: 50%; transition: background 0.3s ease; }
-    .back-arrow:hover { background: rgba(30, 60, 114, 0.1); }
-    label { color: #1e3c72 !important; font-weight: 500; margin-bottom: 0.5rem; }
-    .form-control:focus, .form-select:focus, .select2-container--default.select2-container--focus .select2-selection {
+
+    .select2-container--default .select2-selection--multiple {
+        min-height: 40px !important;
+        height: auto !important;
+        display: flex;
+        align-items: center;
+        padding: 2px 4px;
+    }
+
+    .custom-form-card {
+        border: 1px solid #c5d9f0 !important;
+        border-radius: 8px;
+    }
+
+    .custom-form-card .card-body {
+        padding: 2rem;
+    }
+
+    .back-arrow i {
+        color: #2a5298 !important;
+        font-size: 1.5rem;
+    }
+
+    .back-arrow:hover i {
+        color: #1e3c72 !important;
+    }
+
+    .back-arrow {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px;
+        border-radius: 50%;
+        transition: background 0.3s ease;
+    }
+
+    .back-arrow:hover {
+        background: rgba(30, 60, 114, 0.1);
+    }
+
+    label {
+        color: #1e3c72 !important;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control:focus,
+    .form-select:focus,
+    .select2-container--default.select2-container--focus .select2-selection {
         border-color: #2a5298 !important;
         box-shadow: 0 0 0 0.2rem rgba(42, 82, 152, 0.25) !important;
     }
+
     .select2-container--default .select2-selection--multiple .select2-selection__choice {
-        background-color: #2a5298 !important; border-color: #2a5298 !important; color: white;
+        background-color: #2a5298 !important;
+        border-color: #2a5298 !important;
+        color: white;
     }
-    .btn-primary { background-color: #2a5298 !important; border-color: #2a5298 !important; color: #fff !important; font-weight: 500; padding: 0.5rem 2rem; transition: 0.3s; }
-    .btn-primary:hover { background-color: #1e3c72 !important; border-color: #1e3c72 !important; transform: translateY(-2px); }
-    h4 { color: #1e3c72 !important; font-weight: 600; }
+
+    .btn-primary {
+        background-color: #2a5298 !important;
+        border-color: #2a5298 !important;
+        color: #fff !important;
+        font-weight: 500;
+        padding: 0.5rem 2rem;
+        transition: 0.3s;
+    }
+
+    .btn-primary:hover {
+        background-color: #1e3c72 !important;
+        border-color: #1e3c72 !important;
+        transform: translateY(-2px);
+    }
+
+    h4 {
+        color: #1e3c72 !important;
+        font-weight: 600;
+    }
 </style>
 
 <div class="container mt-4">
@@ -76,7 +142,7 @@
                     <!-- Work Segment -->
                     <div class="col-md-3">
                         <label>Work Segment</label>
-                        <input asp-for="ProjectId" class="form-control" />
+                        <input asp-for="ProjectName" class="form-control" />
                     </div>
 
                     <!-- Location -->
@@ -102,26 +168,39 @@
                             }
                         </select>
                     </div>
+                    <!-- Concern -->
+                    <div class="col-md-3">
+                        <label>Concern</label>
+                        <select asp-for="Concern" class="form-select select2">
+                            <option value="">-- Select Concern --</option>
+                            @foreach (var concern in (List<SelectListItem>)ViewBag.Concerns)
+
+                            {
+                                <option value="@concern.Value">@concern.Text</option>
+                            }
+                        </select>
+                    </div>
+
                     <!-- Assigned By -->
-<div class="col-md-3">
-    <label>Assigned By</label>
-      <select asp-for="AssignedBy" id="AssignedBy" class="form-select select2" required>
-        <option value="">-- Select Assigned By --</option>
-        @foreach (var user in users)
-        {
-            <option value="@user.userName">@user.userName</option>
-        }
-    </select>
-</div>
+                    <div class="col-md-3">
+                        <label>Assigned By</label>
+                        <select asp-for="AssignedBy" id="AssignedBy" class="form-select select2" required>
+                            <option value="">-- Select Assigned By --</option>
+                            @foreach (var user in users)
+                            {
+                                <option value="@user.userName">@user.userName</option>
+                            }
+                        </select>
+                    </div>
 
 
                     <!-- Assigned Users -->
                     <div class="col-md-3">
                         <label>Assigned Users</label>
-                      <select id="AssignedUsers" class="form-select select2" multiple="multiple">
+                        <select id="AssignedUsers" class="form-select select2" multiple="multiple">
                             @foreach (var user in users)
                             {
-                                <option value="@user.userName">@user.userName</option>
+                                <option value="@user.id">@user.userName</option>
                             }
                         </select>
                     </div>
@@ -136,22 +215,23 @@
                     <div class="col-md-3">
                         <label>Start Date</label>
                         <input type="text" id="StartDate" name="StartDate" class="form-control datepicker"
-                               value="@Model.StartDate.ToString("dd/MM/yyyy")" placeholder="DD/MM/YYYY" />
+                            value="@Model.StartDate.ToString("dd/MM/yyyy")" placeholder="DD/MM/YYYY" />
                     </div>
 
                     <!-- End Date -->
                     <div class="col-md-3">
                         <label>End Date</label>
                         <input type="text" id="EndDate" name="EndDate" class="form-control datepicker"
-                               value="@(Model.EndDate?.ToString("dd/MM/yyyy") ?? "")" placeholder="DD/MM/YYYY" />
+                            value="@(Model.EndDate?.ToString("dd/MM/yyyy") ?? "")" placeholder="DD/MM/YYYY" />
                     </div>
 
                     <!-- Status -->
                     <div class="col-md-3">
                         <label>Status</label>
-                        <select asp-for="Status" class="form-select select2" asp-items="Html.GetEnumSelectList<StatusEnum>()">
-                    <option value="">-- Select Status --</option>
-                </select>
+                        <select asp-for="Status" class="form-select select2"
+                            asp-items="Html.GetEnumSelectList<StatusEnum>()">
+                            <option value="">-- Select Status --</option>
+                        </select>
                     </div>
 
                     <!-- Description -->
@@ -193,10 +273,12 @@
         $('#Department').val('@Model.Department').trigger('change');
         $('#Status').val('@Model.Status').trigger('change');
         $('#AssignedBy').val('@Model.AssignedBy').trigger('change');
+        $('#Concern').val('@Model.Concern').trigger('change');
+
 
 
         // Preload multiple assigned users
-        var selectedUsers = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SelectedUserNames ?? new List<string>()));
+        var selectedUsers = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SelectedUserNames ?? new List<int>()));
         $('#AssignedUsers').val(selectedUsers).trigger('change');
 
         // AJAX form submit
@@ -205,14 +287,16 @@
 
             var formData = {
                 Id: $('input[name="Id"]').val(),
-                ProjectId: $('#ProjectId').val(),
+                ProjectName: $('#ProjectName').val(),
                 Location: $('#Location').val(),
                 Department: $('#Department').val(),
-                SelectedUserNames: $('#AssignedUsers').val() || [],
+                Concern: $('#Concern').val(),
+              SelectedUserNames: ($("#assignedUser").val() || []).map(Number),
+
                 Clients: $('#Clients').val(),
-               AssignedBy: $('#AssignedBy').val(),  // <-- new field
-    StartDate: moment($('#StartDate').val(), 'DD/MM/YYYY').utc().format(),
-    EndDate: moment($('#EndDate').val(), 'DD/MM/YYYY').utc().format(),
+                AssignedBy: $('#AssignedBy').val(),  // <-- new field
+                StartDate: moment($('#StartDate').val(), 'DD/MM/YYYY').utc().format(),
+                EndDate: moment($('#EndDate').val(), 'DD/MM/YYYY').utc().format(),
                 Status: parseInt($('#Status').val()),
                 Description: $('#Description').val()
             };

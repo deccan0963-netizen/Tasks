@@ -7,8 +7,8 @@ namespace TaskManagement.Interfaces
 {
     public interface IProjectInterface
     {
-        Task<Result<ProjectBo>> AddAsync(ProjectBo project, List<string> SelectedUserNames);
-        Task<Result<ProjectBo>> UpdateAsync(ProjectBo project, List<string> selectedUserNames);
+        Task<Result<ProjectBo>> AddAsync(ProjectBo project);
+        Task<Result<ProjectBo>> UpdateAsync(ProjectBo project, List<int> selectedUserNames);
         Task<Result<bool>> DeleteAsync(int id);
         Task<Result<List<ProjectBo>>> GetAllAsync();
         Task<Result<ProjectBo>> GetByIdAsync(int id);

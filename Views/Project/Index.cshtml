@@ -6,6 +6,9 @@
     var projectNames = ViewBag.ProjectLookup as Dictionary<int, string> ?? new Dictionary<int, string>();
     var departmentNames = ViewBag.DepartmentLookup as Dictionary<int, string>
     ?? new Dictionary<int, string>();
+    var concernNames = ViewBag.ConcernLookup as Dictionary<int, string> 
+                   ?? new Dictionary<int, string>();
+ var usersLookup = ViewBag.Users as List<ApiUserDto> ?? new List<ApiUserDto>();
     List<RolePermessionDto> rolePermessions = ViewBag.RolePermessions;
 
 }
@@ -61,6 +64,7 @@
             <th>Assigned Users</th>
             <th>Location</th>
             <th>Department</th>
+              <th>Concern</th>
             <th>Start Date</th>
             <th>Status</th>
             <th style="width:120px;">Actions</th>
@@ -72,21 +76,35 @@
         }
         @foreach (var project in Model)
         {
-            string projectName = projectNames.ContainsKey((int)project.ProjectId)
-            ? projectNames[(int)project.ProjectId]
-            : project.ProjectId.ToString();
+    
 
             <tr id="projectRow_@project.Id">
                 <td>@serialNo</td>
-                <td>@projectName</td>
-                <td>@(project.SelectedUserNames.Any() ?
-                                    string.Join(", ", project.SelectedUserNames) : "N/A")</td>
+              <td>@project.ProjectName</td>
+<td>
+    @if (project.SelectedUserNames.Any())
+    {
+        var names = project.SelectedUserNames
+            .Select(id => usersLookup.FirstOrDefault(u => u.id == id)?.userName ?? "N/A");  <!-- Changed: u.id to u.Id -->
+        @string.Join(", ", names)
+    }
+    else
+    {
+        @:N/A
+    }
+</td>
                 <td>@project.Location</td>
                 <td>
                     @(departmentNames.ContainsKey(project.Department)
                                     ? departmentNames[project.Department]
                                     : "N/A")
                 </td>
+             <td>
+    @(concernNames.ContainsKey(project.Concern) 
+        ? concernNames[project.Concern] 
+        : "N/A")
+</td>
+
 
                 <td>@project.StartDate.ToString("dd-MM-yyyy")</td>
                 <td>

@@ -26,7 +26,7 @@ namespace TaskManagement.Data
                 entity.HasKey(p => p.Id);
 
                 // Configure enum conversion for ProjectId
-                entity.Property(p => p.ProjectId).HasConversion<int>().IsRequired();
+              //  entity.Property(p => p.ProjectName).HasConversion<int>().IsRequired();
 
                 // Configure enum conversion for Location
                 entity.Property(p => p.Location).HasConversion<int>().IsRequired();

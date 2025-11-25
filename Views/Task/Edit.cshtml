@@ -11,10 +11,7 @@
     var selectedUsers = Model.SelectedUserNames ?? new List<string>();
 
     // Enum dropdowns
-    var projects = Enum.GetValues(typeof(ProjectEnum))
-    .Cast<ProjectEnum>()
-    .Select(e => new SelectListItem { Value = ((int)e).ToString(), Text = e.ToString() })
-    .ToList();
+   var projects = ViewBag.Projects as List<SelectListItem> ?? new List<SelectListItem>();
 
     var statuses = Enum.GetValues(typeof(StatusEnum))
     .Cast<StatusEnum>()
@@ -81,7 +78,7 @@
                     </div>
 
                     <!-- Department -->
-                    <div class="col-md-3">
+                    @* <div class="col-md-3">
                         <label>Department</label>
                         <select asp-for="Department" id="Department" class="form-select select2" required>
                             <option value="">-- Select Department --</option>
@@ -90,19 +87,21 @@
                                 <option value="@dept.SectionId">@dept.SectionName</option>
                             }
                         </select>
-                    </div>
+                    </div> *@
 
-                    <!-- Work Segment (ProjectEnum) -->
                     <div class="col-md-3">
                         <label>Work Segment</label>
-                        <select asp-for="ProjectId" id="ProjectId" class="form-select select2" required>
+                        <select id="ProjectId" name="ProjectId" class="form-select select2" required>
                             <option value="">-- Select Project --</option>
-                            @foreach (var proj in projects)
+                            @foreach (var p in ViewBag.Projects)
                             {
-                                <option value="@proj.Value">@proj.Text</option>
+                                <option value="@p.Value">
+                                    @p.Text
+                                </option>
                             }
                         </select>
                     </div>
+
                     <!-- Assigned By -->
                     <div class="col-md-3">
                         <label>Assigned By</label>
@@ -186,7 +185,7 @@
         $(".datepicker").datepicker({ format: 'dd/mm/yyyy', autoclose: true, todayHighlight: true });
 
         // ✅ Preselect dropdowns
-        $('#Department').val('@Model.Department').trigger('change');
+        @* $('#Department').val('@Model.Department').trigger('change'); *@
         $('#ProjectId').val('@((int)Model.ProjectId)').trigger('change');
         $('#Status').val('@((int)Model.Status)').trigger('change');
         $('#AssignedBy').val('@Model.AssignedBy').trigger('change');
@@ -207,15 +206,15 @@
             var data = {
                 Id: $('input[name="Id"]').val(),
                 TaskName: $('input[name="TaskName"]').val(),
-                Department: $('#Department').val(),
+                @* Department: $('#Department').val(), *@
                 ProjectId: parseInt($('#ProjectId').val()),
                 SelectedUserNames: $('#AssignedUsers').val() || [],
                 AssignedBy: $('#AssignedBy').val(),
-              CompletedDate: $('#CompletedDate').val()
-    ? moment($('#CompletedDate').val(), 'DD/MM/YYYY').format('YYYY-MM-DD')
-    : null,
+                CompletedDate: $('#CompletedDate').val()
+                    ? moment($('#CompletedDate').val(), 'DD/MM/YYYY').format('YYYY-MM-DD')
+                    : null,
 
-               DueDate: moment($('#DueDate').val(), 'DD/MM/YYYY').format('YYYY-MM-DD'),
+                DueDate: moment($('#DueDate').val(), 'DD/MM/YYYY').format('YYYY-MM-DD'),
 
                 Status: parseInt($('#Status').val()),
                 Description: $('textarea[name="Description"]').val()

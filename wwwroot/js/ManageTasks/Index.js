@@ -9,14 +9,14 @@ $(document).ready(function () {
     return "Unknown";
   }
 
-  function getProjectName(projectId) {
-    for (var key in ProjectEnum) {
-      if (ProjectEnum[key] === parseInt(projectId)) {
-        return key.replace(/([A-Z])/g, " $1").trim();
-      }
-    }
-    return "Unknown Project";
-  }
+  // function getProjectName(projectId) {
+  //   for (var key in ProjectEnum) {
+  //     if (ProjectEnum[key] === parseInt(projectId)) {
+  //       return key.replace(/([A-Z])/g, " $1").trim();
+  //     }
+  //   }
+  //   return "Unknown Project";
+  // }
 
   function formatDate(dateString) {
     if (!dateString || dateString === "N/A") return "N/A";
@@ -250,7 +250,7 @@ $(document).ready(function () {
             (statusFilter === "completed" && p.Status == 3);
         if (!statusMatch || !searchTerm) return statusMatch;
 
-        var projectName = getProjectName(p.ProjectId).toLowerCase();
+          var projectName = p.ProjectName || "Unknown Project";
         var description = (p.Description || "").toLowerCase();
         var dept = departments.find(
             (d) => String(d.SectionId) === String(p.Department)
@@ -265,7 +265,7 @@ $(document).ready(function () {
     });
 
     filteredList.forEach((p) => {
-        var projectName = getProjectName(p.ProjectId);
+          var projectName = p.ProjectName || "Unknown Project";
         var allProjectUsers = new Set();
 
         // Get project-level assigned users
@@ -327,9 +327,10 @@ $(document).ready(function () {
             <div class="project-card" data-project="${p.Id}" data-users="${allUserNames.join(",")}">
                 <a href="#" class="history-btn" data-project="${p.Id}"><i class="bi bi-clock-history"></i></a>
                 <div class="project-priority ${statusName.toLowerCase().replace(" ", "-")}">${statusName}</div>
-                <div class="project-title">${projectName}</div>
+                  <div class="project-title">${p.ProjectName || "Unknown Project"}</div>
                 <span class="project-dept">${dept ? dept.SectionName : ""}</span>
                 <p class="project-description">${p.Description || ""}</p>
+
                 
                 <div class="task-status-counts">
                     ${
@@ -592,6 +593,7 @@ function renderHistoryModal(project) {
 
     $("#history-project-name").text(project.projectName || "N/A");
     $("#history-project-dept").text(project.departmentName || "N/A");
+ 
     
     // FIXED: Use formatted dates
     $("#history-project-start").text(formatDate(project.startingDate) || "N/A");

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
 using RestSharp;
 using TaskManagement.Filters;
@@ -63,7 +64,7 @@ namespace TaskManagement.Controllers
                 // Project lookup
                 ViewBag.ProjectLookup = projects
                     .GroupBy(p => p.Id)
-                    .ToDictionary(g => g.Key, g => g.First().ProjectId.ToString());
+                    .ToDictionary(g => g.Key, g => g.First().ProjectName.ToString());
 
                 return View(allTasks);
             }
@@ -97,10 +98,24 @@ namespace TaskManagement.Controllers
                     ? projectResult.Value
                     : new List<ProjectBo>();
 
+                ViewBag.Projects = projects
+                    .Select(p => new SelectListItem
+                    {
+                        Value = p.Id.ToString(),
+                        Text = p.ProjectName,
+                    })
+                    .ToList();
+
                 // Project list for dropdown
                 ViewBag.Projects = projects
-                    .Select(p => new { p.Id, DisplayName = $"Work Segment - {p.ProjectId}" })
+                    .Where(p => !string.IsNullOrWhiteSpace(p.ProjectName)) // FILTER nulls
+                    .Select(p => new SelectListItem
+                    {
+                        Value = p.Id.ToString(),
+                        Text = p.ProjectName,
+                    })
                     .ToList();
+
                 ViewBag.RolePermessions = await GetRolePermessions();
                 return View(new TaskBo());
             }
@@ -131,7 +146,11 @@ namespace TaskManagement.Controllers
                 var response = await _taskRepo.AddAsync(model);
                 if (response.IsFailed)
                     return Json(
-                        new { success = false, errors = response.Errors.Select(x => x.Message) }
+                        new
+                        {
+                            success = false,
+                            errors = response.Errors.Select(x => x.Message).ToList(),
+                        }
                     );
 
                 return Json(new { success = true, data = response.Value });
@@ -166,8 +185,14 @@ namespace TaskManagement.Controllers
                     : new List<ProjectBo>();
 
                 ViewBag.Projects = projects
-                    .Select(p => new { p.Id, DisplayName = $"Work Segment - {p.ProjectId}" })
+                    .Where(p => !string.IsNullOrWhiteSpace(p.ProjectName))
+                    .Select(p => new SelectListItem
+                    {
+                        Value = p.Id.ToString(),
+                        Text = $" {p.ProjectName}",
+                    })
                     .ToList();
+
                 ViewBag.RolePermessions = await GetRolePermessions();
                 return View(taskResult.Value);
             }

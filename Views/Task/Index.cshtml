@@ -70,7 +70,7 @@
             <th>Task Name</th>
             <th>Work Segment</th>
             <th>Assigned Users</th>
-            <th>Department</th>
+            @* <th>Department</th> *@
             <th>Due Date</th>
             <th>Status</th>
             <th style="width:120px;">Actions</th>
@@ -92,11 +92,11 @@
                 </td>
 
                 <td>@(task.SelectedUserNames.Any() ? string.Join(", ", task.SelectedUserNames) : "N/A")</td>
-                <td>
+                @* <td>
                     @(departmentNames.ContainsKey(task.Department)
                                     ? departmentNames[task.Department]
                                     : "N/A")
-                </td>
+                </td> *@
 
 
                 <td>@task.DueDate.ToString("dd-MM-yyyy")</td>

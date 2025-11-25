@@ -60,7 +60,7 @@ namespace TaskManagement.Controllers
                 ViewBag.Users = usersResult;
                 ViewBag.Projects = projects;
                 ViewBag.Departments = departments;
-                ViewBag.ProjectEnum = typeof(ProjectEnum);
+                // ViewBag.ProjectEnum = typeof(ProjectEnum);
                 ViewBag.StatusEnum = typeof(StatusEnum);
 
                 var Permessionsresult = await GetRolePermessions(4);

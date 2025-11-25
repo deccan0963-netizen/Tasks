@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace TaskManagement.Migrations
 {
     /// <inheritdoc />
-    public partial class CreateallTable : Migration
+    public partial class CreateAllTable : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -39,9 +39,10 @@ namespace TaskManagement.Migrations
                 {
                     ID = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    PROJECT_ID = table.Column<int>(type: "integer", nullable: false),
+                    PROJECT_NAME = table.Column<string>(type: "text", nullable: false),
                     LOCATION = table.Column<int>(type: "integer", nullable: false),
                     DEPARTMENT = table.Column<int>(type: "integer", nullable: false),
+                    CONCERN_ID = table.Column<int>(type: "integer", nullable: false),
                     ASSIGNED_USERS = table.Column<string>(type: "text", nullable: false),
                     ASSIGNED_BY = table.Column<string>(type: "text", nullable: false),
                     CLIENT = table.Column<string>(type: "text", nullable: false),
@@ -68,7 +69,7 @@ namespace TaskManagement.Migrations
                     ID = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     TASK_NAME = table.Column<string>(type: "text", nullable: false),
-                    DEPARTMENT = table.Column<int>(type: "integer", nullable: false),
+                    DEPARTMENT = table.Column<int>(type: "integer", nullable: true),
                     PROJECT_ID = table.Column<int>(type: "integer", nullable: false),
                     ASSIGNED_USERS = table.Column<string>(type: "text", nullable: false),
                     ASSIGNED_BY = table.Column<string>(type: "text", nullable: false),

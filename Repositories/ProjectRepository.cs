@@ -19,25 +19,16 @@ namespace TaskManagement.Repositories
             _context = context;
         }
 
-        public async Task<Result<ProjectBo>> AddAsync(
-            ProjectBo project,
-            List<string> SelectedUserNames
-        )
+        public async Task<Result<ProjectBo>> AddAsync(ProjectBo project)
         {
             try
             {
-                project.SelectedUserNames = SelectedUserNames;
-                project.AssignedBy = project.AssignedBy?.Trim();
-
                 project.StartDate = DateTime.SpecifyKind(project.StartDate, DateTimeKind.Utc);
                 project.EndDate = project.EndDate.HasValue
                     ? DateTime.SpecifyKind(project.EndDate.Value, DateTimeKind.Utc)
                     : null;
 
-                project.CreatedTime = DateTime.UtcNow;
-                project.UpdatedTime = DateTime.UtcNow;
-                project.IsDeleted = "N";
-                project.IsDisabled = "N";
+                project.CreatedTime = DateTime.UtcNow;             
 
                 _context.Projects.Add(project);
                 await _context.SaveChangesAsync();
@@ -50,39 +41,44 @@ namespace TaskManagement.Repositories
             }
         }
 
-      public async Task<Result<ProjectBo>> UpdateAsync(ProjectBo project, List<string> selectedUserNames)
-{
-    try
-    {
-        var existing = await _context.Projects.FindAsync(project.Id);
-        if (existing == null)
-            return Result.Fail<ProjectBo>("Project not found");
+        public async Task<Result<ProjectBo>> UpdateAsync(
+            ProjectBo project,
+            List<int> selectedUserNames
+        )
+        {
+            try
+            {
+                var existing = await _context.Projects.FindAsync(project.Id);
+                if (existing == null)
+                    return Result.Fail<ProjectBo>("Project not found");
 
-        // Update fields instead of creating new record
-        existing.ProjectId = project.ProjectId;
-        existing.Location = project.Location;
-        existing.Department = project.Department;
-        existing.Clients = project.Clients;
-        existing.Description = project.Description;
-        existing.Status = project.Status; // e.g., Completed
-        existing.StartDate = DateTime.SpecifyKind(project.StartDate, DateTimeKind.Utc);
-        existing.EndDate = project.EndDate.HasValue
-            ? DateTime.SpecifyKind(project.EndDate.Value, DateTimeKind.Utc)
-            : null;
-        existing.SelectedUserNames = selectedUserNames;
-        existing.AssignedBy = project.AssignedBy?.Trim();
-        existing.UpdatedTime = DateTime.UtcNow;
+                // Update fields instead of creating new record
+                existing.ProjectName = project.ProjectName;
+                existing.Location = project.Location;
+                existing.Department = project.Department;
+                existing.Concern = project.Concern;
 
-        _context.Projects.Update(existing);
-        await _context.SaveChangesAsync();
+                existing.Clients = project.Clients;
+                existing.Description = project.Description;
+                existing.Status = project.Status; // e.g., Completed
+                existing.StartDate = DateTime.SpecifyKind(project.StartDate, DateTimeKind.Utc);
+                existing.EndDate = project.EndDate.HasValue
+                    ? DateTime.SpecifyKind(project.EndDate.Value, DateTimeKind.Utc)
+                    : null;
+                existing.SelectedUserNames = selectedUserNames;
+                existing.AssignedBy = project.AssignedBy?.Trim();
+                existing.UpdatedTime = DateTime.UtcNow;
 
-        return Result.Ok(existing);
-    }
-    catch (Exception ex)
-    {
-        return Result.Fail<ProjectBo>($"Error updating project: {ex.Message}");
-    }
-}
+                _context.Projects.Update(existing);
+                await _context.SaveChangesAsync();
+
+                return Result.Ok(existing);
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail<ProjectBo>($"Error updating project: {ex.Message}");
+            }
+        }
 
         public async Task<Result<bool>> DeleteAsync(int id)
         {
@@ -104,23 +100,23 @@ namespace TaskManagement.Repositories
                 return Result.Fail<bool>($"Error deleting project: {inner}");
             }
         }
+
         public async Task<Result<List<ProjectBo>>> GetAllIncludingCompletedAsync()
-{
-    try
-    {
-        var projects = await _context.Projects
-            .Where(p => p.IsDeleted == "N") // include completed and active projects
-            .OrderByDescending(p => p.CreatedTime)
-            .ToListAsync();
+        {
+            try
+            {
+                var projects = await _context
+                    .Projects.Where(p => p.IsDeleted == "N") // include completed and active projects
+                    .OrderByDescending(p => p.CreatedTime)
+                    .ToListAsync();
 
-        return Result.Ok(projects);
-    }
-    catch (Exception ex)
-    {
-        return Result.Fail<List<ProjectBo>>($"Error retrieving projects: {ex.Message}");
-    }
-}
-
+                return Result.Ok(projects);
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail<List<ProjectBo>>($"Error retrieving projects: {ex.Message}");
+            }
+        }
 
         public async Task<Result<List<ProjectBo>>> GetAllAsync()
         {

@@ -12,9 +12,9 @@ namespace TaskManagement.Models
         [Column("ID")]
         public int Id { get; set; }
 
-        [Required]
-        [Column("PROJECT_ID")]
-        public ProjectEnum ProjectId { get; set; }
+        [Required(ErrorMessage = "Project Name is required.")]
+        [Column("PROJECT_NAME")]
+        public string ProjectName { get; set; }
 
         [Required]
         [Column("LOCATION")]
@@ -23,13 +23,16 @@ namespace TaskManagement.Models
         [Column("DEPARTMENT")]
         public int Department { get; set; }
 
+        [Column("CONCERN_ID")]
+        public int Concern { get; set; }
+
         [Required(ErrorMessage = "Assigned Users is required.")]
         [Column("ASSIGNED_USERS")]
         public string AssignedUsers { get; set; }
 
         [Required(ErrorMessage = "Assigned By is required.")]
         [Column("ASSIGNED_BY")]
-        public string AssignedBy { get; set; } 
+        public string AssignedBy { get; set; }
 
         [Column("CLIENT")]
         public string Clients { get; set; }
@@ -59,27 +62,24 @@ namespace TaskManagement.Models
         }
 
         [NotMapped]
-        public List<string> SelectedUserNames
+        public List<int> SelectedUserNames
         {
             get
             {
                 if (!string.IsNullOrEmpty(AssignedUsers))
                 {
-                    return AssignedUsers
-                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                        .Select(u => u.Trim())
-                        .ToList();
+                    return AssignedUsers.Split(',').Select(int.Parse).ToList();
                 }
-
-                return new List<string>();
+                return new List<int>();
             }
             set
             {
-                AssignedUsers =
-                    value != null && value.Count > 0 ? string.Join(",", value) : string.Empty;
+
+                AssignedUsers = string.Join(",", value);
             }
         }
 
+        [NotMapped]
         public virtual ICollection<TaskBo> Tasks { get; set; }
     }
 }

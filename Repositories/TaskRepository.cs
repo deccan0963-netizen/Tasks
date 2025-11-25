@@ -29,9 +29,9 @@ namespace TaskManagement.Repositories
                     task.CompletedDate = DateTime.UtcNow;
 
                 task.CreatedTime = DateTime.UtcNow;
-                task.UpdatedTime = DateTime.UtcNow;
-                task.IsDeleted = "N";
-                task.IsDisabled = "N";
+                // task.UpdatedTime = DateTime.UtcNow;
+                // task.IsDeleted = "N";
+                // task.IsDisabled = "N";
 
                 await _context.Tasks.AddAsync(task);
                 await _context.SaveChangesAsync();
@@ -54,10 +54,12 @@ namespace TaskManagement.Repositories
                 existing.IsDisabled = "Y";
                 existing.UpdatedTime = DateTime.UtcNow;
 
+                _context.Tasks.Update(existing);
+
                 var newTask = new TaskBo
                 {
                     TaskName = task.TaskName,
-                    Department = task.Department,
+                    // Department = task.Department,
                     ProjectId = task.ProjectId,
                     SelectedUserNames = task.SelectedUserNames,
                     AssignedUsers = string.Join(",", task.SelectedUserNames ?? new List<string>()),

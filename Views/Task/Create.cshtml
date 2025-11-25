@@ -5,7 +5,7 @@
     var departments = ViewBag.Departments as List<ApiDeptDto> ?? new List<ApiDeptDto>();
     var users = ViewBag.Users as List<ApiUserDto> ?? new List<ApiUserDto>();
     //var projects = ViewBag.Projects as IEnumerable<dynamic> ?? new List<dynamic>();
-     var projects = ViewBag.Projects as List<dynamic> ?? new List<dynamic>();
+    var projects = ViewBag.Projects as List<dynamic> ?? new List<dynamic>();
 }
 
 <!-- CSS -->
@@ -135,7 +135,7 @@
                     </div>
 
                     <!-- Department -->
-                    <div class="col-md-3">
+                    @* <div class="col-md-3">
                         <label asp-for="Department"></label>
                         <select asp-for="Department" id="Department" class="form-select select2" required>
                             <option value="">-- Select Department --</option>
@@ -145,36 +145,42 @@
                             }
                         </select>
                         <span asp-validation-for="Department" class="text-danger"></span>
-                    </div>
+                    </div> *@
 
                     <!-- Project -->
                     <div class="col-md-3">
                         <label>Work Segment</label>
-                      <select asp-for="ProjectId" class="form-select select2" asp-items="Html.GetEnumSelectList<ProjectEnum>()">
-                    <option value="">-- Select Project --</option>
-                </select>
-                        <span class="text-danger" id="ProjectId-validation"></span>
+                        <select id="ProjectId" name="ProjectId" class="form-select select2" required>
+                            <option value="">-- Select Project --</option>
+                            @foreach (var p in ViewBag.Projects)
+                            {
+                                <option value="@p.Value">@p.Text</option>
+                            }
+                        </select>
+
                     </div>
                     <div class="col-md-3">
-    <label>Assigned By</label>
-    <select id="AssignedBy" name="AssignedBy" class="form-select select2" required>
-        <option value="">-- Select Assigned By --</option>
-        @foreach (var user in users)
-        {
-            <option value="@user.userName">@user.userName</option>
-        }
-    </select>
-    <span class="text-danger" id="AssignedBy-validation"></span>
-</div>
-
-                    <!-- Assigned Users -->
-                    <div class="col-md-3">
-                        <label>Assign User</label>
-                        <select id="AssignedUsers" name="SelectedUserNames" class="form-select select2" multiple="multiple">
+                        <label>Assigned By</label>
+                        <select id="AssignedBy" name="AssignedBy" class="form-select select2" required>
+                            <option value="">-- Select Assigned By --</option>
                             @foreach (var user in users)
                             {
                                 <option value="@user.userName">@user.userName</option>
                             }
+                        </select>
+                        <span class="text-danger" id="AssignedBy-validation"></span>
+                    </div>
+
+                    <!-- Assigned Users -->
+                    <div class="col-md-3">
+                        <label>Assign User</label>
+                        <select id="AssignedUsers" name="SelectedUserNames" class="form-select select2"
+                            multiple="multiple">
+                            @foreach (var user in ViewBag.Users)
+                            {
+                                <option value="@user.userName">@user.userName</option>
+                            }
+
                         </select>
                         <span class="text-danger" id="AssignedUsers-validation"></span>
                     </div>
@@ -182,7 +188,8 @@
                     <!-- Due Date -->
                     <div class="col-md-3">
                         <label>Due Date</label>
-                        <input type="text" id="DueDate" name="DueDate" class="form-control datepicker" placeholder="DD/MM/YYYY" required />
+                        <input type="text" id="DueDate" name="DueDate" class="form-control datepicker"
+                            placeholder="DD/MM/YYYY" required />
                         <span class="text-danger" id="DueDate-validation"></span>
                     </div>
 
@@ -200,7 +207,8 @@
                     <!-- Description -->
                     <div class="col-md-12">
                         <label asp-for="Description"></label>
-                        <textarea asp-for="Description" class="form-control" rows="3" placeholder="Enter task description..."></textarea>
+                        <textarea asp-for="Description" class="form-control" rows="3"
+                            placeholder="Enter task description..."></textarea>
                     </div>
                 </div>
 
@@ -218,70 +226,69 @@
 <script src="~/js/select2.min.js"></script>
 <script src="~/js/sweetalert2.all.min.js"></script>
 <script src="~/js/moment.min.js"></script>
-
 <script>
     $(document).ready(function () {
+
+        // Select2 + Datepicker
         $(".select2").select2({ width: '100%' });
-        $(".datepicker").datepicker({ format: 'dd/mm/yyyy', autoclose: true, todayHighlight: true });
-
-        // ✅ Filter projects by department
-        $('#Department').change(function () {
-            var dept = $(this).val();
-            $('#ProjectId option').each(function () {
-                var projectDept = $(this).data('department');
-                if (!dept || $(this).val() === "" || projectDept == dept) $(this).show();
-                else $(this).hide();
-            });
-            $('#ProjectId').val('').trigger('change');
-            $('#AssignedUsers').val(null).trigger('change');
+        $(".datepicker").datepicker({
+            format: 'dd/mm/yyyy',
+            autoclose: true,
+            todayHighlight: true
         });
 
-        // ✅ When selecting project → show ALL users
+        @* // Load Assigned Users based on Project
         $('#ProjectId').change(function () {
-            var projectId = $(this).val();
-            console.log("Project changed:", projectId);
-            $('#AssignedUsers').empty();
+            let projectId = $(this).val();
+            $('#AssignedUsers').empty().trigger('change');
 
-            if (projectId) {
-                // Load all users from ViewBag (in Razor)
-                @foreach (var user in users)
-                {
-                    @:$('#AssignedUsers').append(new Option('@user.userName', '@user.userName'));
+            if (!projectId) return;
+
+            $.get('/Task/GetUsersByProject', { projectId: projectId }, function (users) {
+
+                if (!users || users.length === 0) {
+                    Swal.fire('No Users Found', 'No users assigned to this project', 'warning');
+                    return;
                 }
-            }
 
-            $('#AssignedUsers').trigger('change');
-        });
+                users.forEach(u => {
+                    $('#AssignedUsers').append(new Option(u.userName, u.userName));
+                });
 
-        // ✅ Submit form with validation
+                $('#AssignedUsers').trigger('change');
+            });
+        }); *@
+
+        // Save Task
         $('#taskForm').submit(function (e) {
             e.preventDefault();
 
-            var isValid = true;
-            if (!$('#TaskName').val().trim()) isValid = false;
-            if (!$('#Department').val()) isValid = false;
-            if (!$('#ProjectId').val()) isValid = false;
-            if (!$('#DueDate').val()) isValid = false;
-            if (!$('#AssignedBy').val()) isValid = false;
+            // Validation
+            if (!$('#TaskName').val() ||
+                !$('#ProjectId').val() ||
+                !$('#AssignedBy').val() ||
+                !$('#DueDate').val()) {
 
-
-            if (!isValid) {
-                Swal.fire({ icon: 'warning', title: 'Validation Error', text: 'Please fill all required fields.' });
+                Swal.fire('Validation Error', 'Please fill all required fields', 'warning');
                 return;
             }
 
-            var formData = {
-                TaskName: $('#TaskName').val().trim(),
-                Department: $('#Department').val(),
-                ProjectId: $('#ProjectId').val(),
-                   AssignedBy: $('#AssignedBy').val(),
+            let dueDate = moment($('#DueDate').val(), 'DD/MM/YYYY')
+                .format('YYYY-MM-DDTHH:mm:ss');
+
+            // Prepare Data
+            let formData = {
+                TaskName: $('#TaskName').val(),
+                ProjectId: parseInt($('#ProjectId').val()),
+
+                AssignedBy: $('#AssignedBy').val(),
                 SelectedUserNames: $('#AssignedUsers').val() || [],
-                DueDate: moment($('#DueDate').val(), 'DD/MM/YYYY').utc().format(),
+                DueDate: dueDate,
                 Description: $('#Description').val(),
-                Status: $('#Status').val() || 0
+                Status: $('#Status').val()
             };
 
-            Swal.fire({ title: 'Creating Task...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            Swal.fire({ title: 'Saving Task...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
             $.ajax({
                 url: '@Url.Action("Create", "Task")',
@@ -289,17 +296,19 @@
                 data: formData,
                 headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
                 success: function (res) {
+
                     Swal.close();
+
                     if (res.success) {
-                        Swal.fire({ icon: 'success', title: 'Task Created', timer: 2000, showConfirmButton: false })
+                        Swal.fire('Created!', 'Task created successfully!', 'success')
                             .then(() => window.location.href = '@Url.Action("Index", "Task")');
                     } else {
-                        Swal.fire({ icon: 'error', title: 'Error', text: res.errors?.join(', ') || 'Failed to create task' });
+                        let errorMsg = Array.isArray(res.errors) ? res.errors.join(", ") : res.errors;
+                        Swal.fire('Error', errorMsg, 'error');
                     }
                 },
                 error: function () {
-                    Swal.close();
-                    Swal.fire({ icon: 'error', title: 'Error', text: 'Something went wrong.' });
+                    Swal.fire('Server Error', 'Something went wrong.', 'error');
                 }
             });
         });

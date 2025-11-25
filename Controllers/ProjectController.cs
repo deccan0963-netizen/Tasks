@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
 using RestSharp;
 using TaskManagement.Filters;
@@ -21,6 +22,7 @@ namespace TaskManagement.Controllers
         private readonly ITaskAcceptanceInterface _taskAcceptanceRepo;
         private readonly ApiDepartmentLoad _apiDepartmentLoad;
         private readonly ApiUserLoader _apiUserLoader;
+        private ApiConcernLoad _apiConcernLoad;
         private readonly ITaskInterface _taskRepo;
 
         public ProjectController(
@@ -28,7 +30,8 @@ namespace TaskManagement.Controllers
             ITaskInterface taskRepo,
             ITaskAcceptanceInterface taskAcceptanceRepo,
             ApiDepartmentLoad apiDepartmentLoad,
-            ApiUserLoader apiUserLoader
+            ApiUserLoader apiUserLoader,
+            ApiConcernLoad apiConcernLoad
         )
         {
             _projectRepo = projectRepo;
@@ -36,6 +39,7 @@ namespace TaskManagement.Controllers
             _taskAcceptanceRepo = taskAcceptanceRepo;
             _apiDepartmentLoad = apiDepartmentLoad;
             _apiUserLoader = apiUserLoader;
+            _apiConcernLoad = apiConcernLoad;
         }
 
         [PermissionFilter("Project", "View")]
@@ -73,16 +77,23 @@ namespace TaskManagement.Controllers
 
                 var users = GlobalUserData.globalUserList ?? new List<ApiUserDto>();
                 var departments = GlobalDeptData.globalDeptList ?? new List<ApiDeptDto>();
-
                 ViewBag.DepartmentLookup = departments
                     .GroupBy(d => d.SectionId)
                     .ToDictionary(g => g.Key, g => g.First().SectionName);
+                var concernResult = await _apiConcernLoad.GetApiListDataAsync<ApiConcernDto>();
+                var concerns = concernResult.IsSuccess
+                    ? concernResult.Value
+                    : new List<ApiConcernDto>();
+
+                ViewBag.ConcernLookup = concerns.ToDictionary(c => c.ConcernId, c => c.ConcernName);
+                ViewBag.Concern = concerns;
 
                 var projectResult = await _projectRepo.GetAllAsync();
                 var projectList = projectResult.Value ?? new List<ProjectBo>();
 
                 ViewBag.Users = users;
                 ViewBag.Departments = departments;
+                ViewBag.Concern = concerns;
 
                 ViewBag.RolePermessions = await GetRolePermessions();
                 return View(projectList);
@@ -91,6 +102,7 @@ namespace TaskManagement.Controllers
             {
                 ViewBag.Users = new List<ApiUserDto>();
                 ViewBag.Departments = new List<ApiDeptDto>();
+                ViewBag.Concern = new List<ApiConcernDto>();
                 ViewBag.ErrorMessage = ex.Message;
                 return View(new List<ProjectBo>());
             }
@@ -102,11 +114,14 @@ namespace TaskManagement.Controllers
         {
             var userResult = await _apiUserLoader.GetApiListDataAsync<ApiUserDto>();
             var deptResult = await _apiDepartmentLoad.GetApiListDataAsync<ApiDeptDto>();
+            var concernResult = await _apiConcernLoad.GetApiListDataAsync<ApiConcernDto>();
 
             ViewBag.Users = userResult.IsSuccess ? userResult.Value : new List<ApiUserDto>();
             ViewBag.Departments = deptResult.IsSuccess ? deptResult.Value : new List<ApiDeptDto>();
+            ViewBag.Concern = concernResult.IsSuccess
+                ? concernResult.Value
+                : new List<ApiConcernDto>();
             ViewBag.RolePermessions = await GetRolePermessions();
-
 
             return View(new ProjectBo());
         }
@@ -114,31 +129,29 @@ namespace TaskManagement.Controllers
         [PermissionFilter("Project", "Create-Update")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<JsonResult> Create(ProjectBo model, List<string> SelectedUserNames)
+        public async Task<JsonResult> Create(ProjectBo model, List<int> SelectedUserNames)
         {
             try
-            {
-                SetCreatedFields(model);
-
-                model.SelectedUserNames = SelectedUserNames ?? new List<string>();
-
-                // AssignedBy should be username string already from form
-                model.AssignedBy = model.AssignedBy?.Trim();
+            { 
+               
 
                 var response = await _projectRepo.AddAsync(
-                    model,
-                    SelectedUserNames ?? new List<string>()
+                    model
                 );
                 if (response.IsFailed)
                     return Json(
-                        new { success = false, errors = response.Errors.Select(x => x.Message) }
+                        new
+                        {
+                            success = false,
+                            errors = response.Errors.Select(x => x.Message).ToList(),
+                        }
                     );
 
                 return Json(new { success = true, data = response.Value });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, errors = new[] { ex.Message } });
+                return Json(new { success = false, errors = new List<string> { ex.Message } });
             }
         }
 
@@ -151,14 +164,29 @@ namespace TaskManagement.Controllers
                 return NotFound();
 
             var project = projectResult.Value;
-            project.SelectedUserNames ??= new List<string>();
+            project.SelectedUserNames ??= new List<int>();
             var userResult = await _apiUserLoader.GetApiListDataAsync<ApiUserDto>();
             var deptResult = await _apiDepartmentLoad.GetApiListDataAsync<ApiDeptDto>();
+            var concernResult = await _apiConcernLoad.GetApiListDataAsync<ApiConcernDto>();
 
             ViewBag.Users = userResult.IsSuccess ? userResult.Value : new List<ApiUserDto>();
             ViewBag.Departments = deptResult.IsSuccess ? deptResult.Value : new List<ApiDeptDto>();
-            ViewBag.RolePermessions = await GetRolePermessions();
+            if (concernResult.IsSuccess)
+            {
+                ViewBag.Concerns = concernResult
+                    .Value.Select(c => new SelectListItem
+                    {
+                        Value = c.ConcernId.ToString(),
+                        Text = c.ConcernName,
+                    })
+                    .ToList();
+            }
+            else
+            {
+                ViewBag.Concerns = new List<SelectListItem>();
+            }
 
+            ViewBag.RolePermessions = await GetRolePermessions();
 
             return View(project);
         }
@@ -166,7 +194,7 @@ namespace TaskManagement.Controllers
         [PermissionFilter("Project", "Create-Update")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<JsonResult> Edit(ProjectBo model, List<string> SelectedUserNames)
+        public async Task<JsonResult> Edit(ProjectBo model, List<int> SelectedUserNames)
         {
             try
             {
@@ -174,7 +202,7 @@ namespace TaskManagement.Controllers
 
                 var response = await _projectRepo.UpdateAsync(
                     model,
-                    SelectedUserNames ?? new List<string>()
+                    SelectedUserNames ?? new List<int>()
                 );
                 if (response.IsFailed)
                     return Json(
@@ -242,7 +270,7 @@ namespace TaskManagement.Controllers
                 GlobalDeptData
                     .globalDeptList?.FirstOrDefault(d => d.SectionId == project.Department)
                     ?.SectionName ?? "N/A";
-            var assignedUsers = project.SelectedUserNames ?? new List<string>();
+            var assignedUsers = project.SelectedUserNames ?? new List<int>();
 
             var tasks = new List<object>();
             if (_taskRepo != null)
@@ -273,8 +301,7 @@ namespace TaskManagement.Controllers
                     success = true,
                     data = new
                     {
-                        projectId = project.Id,
-                        projectName = project.ProjectId.ToString(),
+                        projectName = project.ProjectName ?? "N/A",
                         departmentName = deptName,
                         location = project.Location.ToString() ?? "N/A",
                         startingDate = project.StartDate.ToString("dd/MM/yyyy"),

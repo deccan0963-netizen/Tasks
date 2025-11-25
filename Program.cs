@@ -32,6 +32,7 @@ builder.Services.AddScoped<ITaskAcceptanceInterface, TaskAcceptanceRepository>()
 // Register singleton loaders
 builder.Services.AddSingleton<ApiDepartmentLoad>();
 builder.Services.AddSingleton<ApiUserLoader>();
+builder.Services.AddSingleton<ApiConcernLoad>();
 
 // Register RolePrivilegeService & supporting services
 builder.Services.AddScoped<RolePrivilegeService>();

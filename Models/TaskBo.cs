@@ -16,9 +16,9 @@ namespace TaskManagement.Models
         [Column("TASK_NAME")]
         public string TaskName { get; set; }
 
-        [Required(ErrorMessage = "Department is required.")]
+       
         [Column("DEPARTMENT")]
-        public int Department { get; set; }
+        public int? Department { get; set; }
 
         [Required(ErrorMessage = "Project is required.")]
         [Column("PROJECT_ID")]
@@ -30,14 +30,14 @@ namespace TaskManagement.Models
 
         [Required(ErrorMessage = "Assigned By is required.")]
         [Column("ASSIGNED_BY")]
-        public string AssignedBy { get; set; }  // New field for Assigned By
+        public string AssignedBy { get; set; }  
 
         [Required(ErrorMessage = "Due Date is required.")]
         [Column("DUE_DATE", TypeName = "timestamp with time zone")]
         public DateTime DueDate { get; set; }
 
         [Column("COMPLETED_DATE", TypeName = "timestamp with time zone")]
-        public DateTime? CompletedDate { get; set; }  // New field for Completed Date
+        public DateTime? CompletedDate { get; set; }  
 
         [Column("DESCRIPTION")]
         public string Description { get; set; }

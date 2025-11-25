@@ -5,6 +5,7 @@
     ViewData["Title"] = "Create Project";
     var departments = ViewBag.Departments as List<ApiDeptDto> ?? new List<ApiDeptDto>();
     var users = ViewBag.Users as List<ApiUserDto> ?? new List<ApiUserDto>();
+    var concerns = ViewBag.Concerns as List<ApiConcernDto> ?? new List<ApiConcernDto>();
     var projectList = ViewBag.ProjectList as List<dynamic> ?? new List<dynamic>();
 }
 
@@ -138,9 +139,8 @@
                     <!-- Project / Work Segment -->
                     <div class="col-md-3">
                         <label>Work Segment</label>
-                   <select asp-for="ProjectId" class="form-select select2" asp-items="Html.GetEnumSelectList<ProjectEnum>()">
-                    <option value="">-- Select Project --</option>
-                </select>
+                        <input asp-for="ProjectName" class="form-control" required />
+                        <span asp-validation-for="ProjectName" class="text-danger"></span>
                     </div>
 
 
@@ -167,24 +167,35 @@
                             }
                         </select>
                     </div>
+                    <div class="col-md-3">
+                        <label>Concern</label>
+                        <select id="Concern" name="Concern" class="form-select select2" required>
+                            <option value="">-- Select Concern --</option>
+                            @foreach (var con in ViewBag.Concern as List<ApiConcernDto>)
+                            {
+                                <option value="@con.ConcernId">@con.ConcernName</option>
+                            }
+                        </select>
+                    </div>
+
 
                     <!-- Clients -->
                     <div class="col-md-3">
                         <label>Client</label>
                         <input id="Clients" name="Clients" class="form-control" required />
                     </div>
-<!-- Assigned By -->
-<div class="col-md-3">
-    <label>Assigned By</label>
-   <select id="AssignedBy" name="AssignedBy" class="form-select select2" required>
-        <option value="">-- Select Assigned By --</option>
-        @foreach (var user in users)
-        {
-         <option value="@user.userName">@user.userName</option>
+                    <!-- Assigned By -->
+                    <div class="col-md-3">
+                        <label>Assigned By</label>
+                        <select id="AssignedBy" name="AssignedBy" class="form-select select2" required>
+                            <option value="">-- Select Assigned By --</option>
+                            @foreach (var user in users)
+                            {
+                                <option value="@user.userName">@user.userName</option>
 
-        }
-    </select>
-</div>
+                            }
+                        </select>
+                    </div>
 
                     <!-- Assigned Users -->
                     <div class="col-md-3">
@@ -193,7 +204,7 @@
                             multiple="multiple">
                             @foreach (var user in users)
                             {
-                                <option value="@user.userName">@user.userName</option>
+                                <option value="@user.id">@user.userName</option>
                             }
                         </select>
                     </div>
@@ -252,15 +263,17 @@
 
             var formData = {
                 Id: $("input[name='Id']").val(),
-                ProjectId: $("#ProjectId").val(),
+                ProjectName: $("#ProjectName").val(),
                 Location: $("#Location").val(),
                 Department: $("#Department").val(),
-                SelectedUserNames: $("#assignedUser").val() || [],
+                Concern: $("#Concern").val(),
+                AssignedUsers: ($("#assignedUser").val() || []).join(','),
                 Clients: $("#Clients").val(),
-                 AssignedBy: $("#AssignedBy").val(),  // <-- new field
-    StartDate: moment($("#StartDate").val(), "DD/MM/YYYY").utc().format(),
+                AssignedBy: $("#AssignedBy").val(),
+                StartDate: moment($("#StartDate").val(), "DD/MM/YYYY").utc().format(),
                 Description: $("#Description").val()
             };
+            console.log("project data",formData);
 
             $.ajax({
                 url: '@Url.Action("Create", "Project")',
@@ -268,15 +281,27 @@
                 data: formData,
                 headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
                 success: function (res) {
+
                     if (res.success) {
                         Swal.fire({
                             icon: 'success',
                             title: 'Project created!',
                             timer: 1500,
                             showConfirmButton: false
-                        }).then(() => location.href = '@Url.Action("Index", "Project")');
+                        })
+                        .then(() => location.href = '@Url.Action("Index", "Project")');
                     } else {
-                        Swal.fire({ icon: 'error', title: 'Error', text: res.errors.join(", ") });
+
+                        // FIX: always convert to array
+                        let errors = Array.isArray(res.errors)
+                            ? res.errors
+                            : Object.values(res.errors);
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: errors.join(", ")
+                        });
                     }
                 }
             });

@@ -46,6 +46,10 @@ namespace TaskManagement.Migrations
                         .HasColumnType("text")
                         .HasColumnName("CLIENT");
 
+                    b.Property<int>("Concern")
+                        .HasColumnType("integer")
+                        .HasColumnName("CONCERN_ID");
+
                     b.Property<int?>("CreatedBy")
                         .HasColumnType("integer")
                         .HasColumnName("CREATEDBY");
@@ -81,9 +85,10 @@ namespace TaskManagement.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("LOCATION");
 
-                    b.Property<int>("ProjectId")
-                        .HasColumnType("integer")
-                        .HasColumnName("PROJECT_ID");
+                    b.Property<string>("ProjectName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("PROJECT_NAME");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone")
@@ -190,7 +195,7 @@ namespace TaskManagement.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("CREATEDTIME");
 
-                    b.Property<int>("Department")
+                    b.Property<int?>("Department")
                         .HasColumnType("integer")
                         .HasColumnName("DEPARTMENT");
 
