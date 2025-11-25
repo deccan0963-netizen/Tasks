@@ -9,21 +9,12 @@ $(document).ready(function () {
     return "Unknown";
   }
 
-  // function getProjectName(projectId) {
-  //   for (var key in ProjectEnum) {
-  //     if (ProjectEnum[key] === parseInt(projectId)) {
-  //       return key.replace(/([A-Z])/g, " $1").trim();
-  //     }
-  //   }
-  //   return "Unknown Project";
-  // }
-
   function formatDate(dateString) {
     if (!dateString || dateString === "N/A") return "N/A";
     
     try {
       const date = new Date(dateString);
-      if (isNaN(date.getTime())) return dateString; // Return original if invalid
+      if (isNaN(date.getTime())) return dateString;
       
       const day = String(date.getDate()).padStart(2, '0');
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -31,7 +22,7 @@ $(document).ready(function () {
       
       return `${day}/${month}/${year}`;
     } catch (e) {
-      return dateString; // Return original if parsing fails
+      return dateString;
     }
   }
 
@@ -60,9 +51,30 @@ $(document).ready(function () {
     return [String(raw)];
   }
 
+  // NEW: Universal function to normalize any array data
+  function normalizeArray(data) {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (data.$values && Array.isArray(data.$values)) return data.$values;
+    if (typeof data === 'object') return Object.values(data);
+    if (typeof data === 'string') return data.split(',').map(x => x.trim()).filter(x => x);
+    return [data];
+  }
+
+  // NEW: Convert user IDs to usernames
+  function convertUserIdsToUsernames(userIds) {
+    const normalized = normalizeArray(userIds);
+    return normalized.map(userId => {
+      if (typeof userId === 'number') userId = String(userId);
+      const user = users.find(u => String(u.id) === String(userId) || u.userName === userId);
+      return user ? user.userName : userId;
+    });
+  }
+
   // --- Global Variables ---
   var currentStatusFilter = "all", currentUserFilter = "all", currentSearchTerm = "", currentUserSearchTerm = "";
   var projectTasksCache = {}, projectAcceptedTasksCache = {}, userProjectCounts = {};
+  var projectUsersCache = {};
 
   // --- Core Functions ---
   function calculateUserProjectCounts() {
@@ -70,35 +82,37 @@ $(document).ready(function () {
     projects.forEach((p) => {
       const projectId = p.Id;
       
-      // Project-level assignments
-      if (p.AssignedUsers) {
-        p.AssignedUsers.split(",").forEach((name) => {
-          const user = name.trim();
-          if (user) {
-            if (!userProjectCounts[user]) userProjectCounts[user] = new Set();
-            userProjectCounts[user].add(projectId);
-          }
-        });
-      }
+      // Get assigned users from cache or initial data
+      const assignedUsers = projectUsersCache[projectId] || 
+                           getAssignedUsersFromProject(p) || 
+                           [];
       
-      // Task-level assignments - FIXED: Always include tasks even for completed projects
+      // Project-level assignments
+      assignedUsers.forEach((username) => {
+        const user = username.trim();
+        if (user && user !== "N/A") {
+          if (!userProjectCounts[user]) userProjectCounts[user] = new Set();
+          userProjectCounts[user].add(projectId);
+        }
+      });
+      
+      // Task-level assignments
       const tasks = projectTasksCache[p.Id] || normalizeTasksArray(p.tasks || []);
       tasks.forEach((task) => {
         const addUser = (user) => {
-          if (user && user !== "N/A") {
+          if (user && user !== "N/A" && typeof user === 'string') {
             if (!userProjectCounts[user]) userProjectCounts[user] = new Set();
             userProjectCounts[user].add(projectId);
           }
         };
 
-        if (task.assignedUser) addUser(task.assignedUser.trim());
-        if (task.assignedBy) addUser(task.assignedBy.trim());
+        if (task.assignedUser && typeof task.assignedUser === 'string') addUser(task.assignedUser.trim());
+        if (task.assignedBy && typeof task.assignedBy === 'string') addUser(task.assignedBy.trim());
         
-        if (task.assignedUsers) {
-          const users = Array.isArray(task.assignedUsers) ? task.assignedUsers 
-            : typeof task.assignedUsers === "string" ? task.assignedUsers.split(",").map(x => x.trim()) : [];
-          users.forEach(addUser);
-        }
+        const taskAssignedUsers = normalizeArray(task.assignedUsers);
+        taskAssignedUsers.forEach(user => {
+          if (typeof user === 'string') addUser(user.trim());
+        });
       });
     });
     
@@ -106,6 +120,21 @@ $(document).ready(function () {
     Object.keys(userProjectCounts).forEach(user => {
       userProjectCounts[user] = userProjectCounts[user].size;
     });
+  }
+
+  // Helper function to extract assigned users from project data
+  function getAssignedUsersFromProject(project) {
+    // Try different possible properties and formats
+    if (project.assignedUsers) {
+      return convertUserIdsToUsernames(project.assignedUsers);
+    }
+    if (project.AssignedUsers) {
+      return convertUserIdsToUsernames(project.AssignedUsers);
+    }
+    if (project.SelectedUserNames) {
+      return convertUserIdsToUsernames(project.SelectedUserNames);
+    }
+    return [];
   }
 
   function calculateProjectProgress(project) {
@@ -134,29 +163,29 @@ $(document).ready(function () {
 
   function getAllProjectUsers(project) {
     var allUsers = new Set();
-    // FIXED: Always get tasks even for completed projects
     var tasks = projectTasksCache[project.Id] || normalizeTasksArray(project.tasks || []);
 
     // Project-level users
-    if (project.assignedUsers) {
-      var projectUsers = Array.isArray(project.assignedUsers) ? project.assignedUsers 
-        : project.assignedUsers.$values || [project.assignedUsers];
-      projectUsers.forEach(user => user && user !== "N/A" && allUsers.add(user.trim()));
-    }
+    const assignedUsers = projectUsersCache[project.Id] || getAssignedUsersFromProject(project);
+    assignedUsers.forEach(user => {
+      if (user && user !== "N/A" && typeof user === 'string') {
+        allUsers.add(user.trim());
+      }
+    });
 
     // Task-level users
     tasks.forEach(task => {
-      const addUser = (user) => user && user !== "N/A" && allUsers.add(user.trim());
+      const addUser = (user) => {
+        if (user && user !== "N/A" && typeof user === 'string') {
+          allUsers.add(user.trim());
+        }
+      };
       
       if (task.assignedUser) addUser(task.assignedUser);
-      if (task.assignedBy) addUser(task.assignedBy);
+      // if (task.assignedBy) addUser(task.assignedBy);
       
-      if (task.assignedUsers) {
-        var usersArray = Array.isArray(task.assignedUsers) ? task.assignedUsers 
-          : typeof task.assignedUsers === "string" ? task.assignedUsers.split(",").map(x => x.trim())
-          : task.assignedUsers.$values || [];
-        usersArray.forEach(addUser);
-      }
+      const taskAssignedUsers = normalizeArray(task.assignedUsers);
+      taskAssignedUsers.forEach(addUser);
     });
 
     return Array.from(allUsers);
@@ -168,9 +197,14 @@ $(document).ready(function () {
         url: "/Project/GetProjectDetails", type: "GET", data: { id: projectId },
         success: function (response) {
           if (response?.success && response.data) {
-            // FIXED: Always cache tasks even for completed projects
             projectTasksCache[projectId] = normalizeTasksArray(response.data.tasks || []);
             if (response.data.acceptedTasks) projectAcceptedTasksCache[projectId] = response.data.acceptedTasks;
+            
+            // Cache the assigned users from the detailed response
+            if (response.data.assignedUsers) {
+              // Use the universal normalizer and convert to usernames
+              projectUsersCache[projectId] = convertUserIdsToUsernames(response.data.assignedUsers);
+            }
           }
           resolve();
         },
@@ -225,17 +259,18 @@ $(document).ready(function () {
   function filterProjectsByUser(userName) {
     if (userName === "all") return projects;
     return projects.filter(p => {
-      if (p.AssignedUsers && p.AssignedUsers.split(",").map(x => x.trim()).includes(userName)) return true;
+      // Check project-level assignments
+      const assignedUsers = projectUsersCache[p.Id] || getAssignedUsersFromProject(p);
+      if (assignedUsers && assignedUsers.includes(userName)) return true;
+      
+      // Check task-level assignments
       var projectTasks = projectTasksCache[p.Id] || [];
       return projectTasks.some(task => {
         if (task.assignedUser && task.assignedUser.trim() === userName) return true;
         if (task.assignedBy && task.assignedBy.trim() === userName) return true;
-        if (task.assignedUsers) {
-          var assignedUsers = Array.isArray(task.assignedUsers) ? task.assignedUsers 
-            : typeof task.assignedUsers === "string" ? task.assignedUsers.split(",").map(x => x.trim()) : [];
-          return assignedUsers.includes(userName);
-        }
-        return false;
+        
+        const taskAssignedUsers = normalizeArray(task.assignedUsers);
+        return taskAssignedUsers.includes(userName);
       });
     });
   }
@@ -250,7 +285,7 @@ $(document).ready(function () {
             (statusFilter === "completed" && p.Status == 3);
         if (!statusMatch || !searchTerm) return statusMatch;
 
-          var projectName = p.ProjectName || "Unknown Project";
+        var projectName = p.ProjectName || "Unknown Project";
         var description = (p.Description || "").toLowerCase();
         var dept = departments.find(
             (d) => String(d.SectionId) === String(p.Department)
@@ -265,49 +300,14 @@ $(document).ready(function () {
     });
 
     filteredList.forEach((p) => {
-          var projectName = p.ProjectName || "Unknown Project";
-        var allProjectUsers = new Set();
-
-        // Get project-level assigned users
-        var projectAssignedUsers = p.AssignedUsers
-            ? p.AssignedUsers.split(",")
-                  .map((x) => x.trim())
-                  .filter(Boolean)
-            : [];
-        projectAssignedUsers.forEach((user) => allProjectUsers.add(user));
-
-        // FIXED: Always get tasks even for completed projects
-        var projectTasks = projectTasksCache[p.Id] || [];
-        projectTasks.forEach((task) => {
-            if (task.assignedUser && task.assignedUser !== "N/A") {
-                allProjectUsers.add(task.assignedUser.trim());
-            }
-
-            if (task.assignedUsers) {
-                var usersArray = [];
-                if (Array.isArray(task.assignedUsers)) {
-                    usersArray = task.assignedUsers;
-                } else if (typeof task.assignedUsers === "string") {
-                    usersArray = task.assignedUsers.split(",").map((x) => x.trim());
-                }
-
-                usersArray.forEach((user) => {
-                    if (user && user !== "N/A") {
-                        allProjectUsers.add(user);
-                    }
-                });
-            }
-
-            if (task.assignedBy && task.assignedBy !== "N/A") {
-                allProjectUsers.add(task.assignedBy.trim());
-            }
-        });
-
-        var allUserNames = Array.from(allProjectUsers);
+        var projectName = p.ProjectName || "Unknown Project";
+        var allProjectUsers = getAllProjectUsers(p);
+        
+        console.log(`Project ${p.Id} users:`, allProjectUsers);
         
         var userAvatars = '';
-        if (allUserNames.length > 0) {
-            userAvatars = allUserNames.slice(0, 3).map((userName) => 
+        if (allProjectUsers.length > 0) {
+            userAvatars = allProjectUsers.slice(0, 3).map((userName) => 
                 `<div class="team-avatar" title="${userName}">${userName.substring(0, 2).toUpperCase()}</div>`
             ).join("");
         }
@@ -320,18 +320,16 @@ $(document).ready(function () {
         var taskCounts = getTaskCountsByStatus(p);
         var totalTasks = taskCounts.pending + taskCounts.inProgress + taskCounts.completed;
 
-        // FIXED: Use formatted date
         var endDate = formatDate(p.EndDate);
 
         $("#projectsGrid").append(`
-            <div class="project-card" data-project="${p.Id}" data-users="${allUserNames.join(",")}">
+            <div class="project-card" data-project="${p.Id}" data-users="${allProjectUsers.join(",")}">
                 <a href="#" class="history-btn" data-project="${p.Id}"><i class="bi bi-clock-history"></i></a>
                 <div class="project-priority ${statusName.toLowerCase().replace(" ", "-")}">${statusName}</div>
-                  <div class="project-title">${p.ProjectName || "Unknown Project"}</div>
+                <div class="project-title">${p.ProjectName || "Unknown Project"}</div>
                 <span class="project-dept">${dept ? dept.SectionName : ""}</span>
                 <p class="project-description">${p.Description || ""}</p>
 
-                
                 <div class="task-status-counts">
                     ${
                         totalTasks > 0
@@ -354,10 +352,10 @@ $(document).ready(function () {
                     <div class="project-team">
                       ${userAvatars}
                       ${
-                        allUserNames.length > 3
-                          ? `<div class="team-count">+${allUserNames.length - 3} more</div>`
-                          : allUserNames.length > 0
-                          ? `<div class="team-count">${allUserNames.length} members</div>`
+                        allProjectUsers.length > 3
+                          ? `<div class="team-count">+${allProjectUsers.length - 3} more</div>`
+                          : allProjectUsers.length > 0
+                          ? `<div class="team-count">${allProjectUsers.length} members</div>`
                           : '<div class="team-count">No members</div>'
                       }
                     </div>
@@ -385,6 +383,11 @@ $(document).ready(function () {
           $(modalId).modal("hide");
           return;
         }
+        // Update cache with fresh data and normalize
+        if (response.data.assignedUsers) {
+          response.data.assignedUsers = convertUserIdsToUsernames(response.data.assignedUsers);
+          projectUsersCache[projectId] = response.data.assignedUsers;
+        }
         renderFunction(response.data);
       },
       error: () => {
@@ -400,19 +403,19 @@ $(document).ready(function () {
     $("#v-dept").text(project.departmentName || "N/A");
     $("#v-location").text(project.location || "N/A");
     
-    // FIXED: Use formatted dates
     $("#v-startdate").text(formatDate(project.startingDate) || "N/A");
-    
     $("#v-assignedby").text(project.assignedBy || "N/A");
 
-    var allUserNames = getAllProjectUsers(project);
+    // Normalize assigned users data
+    var allUserNames = normalizeArray(project.assignedUsers || []);
+    console.log("Project details modal users:", allUserNames);
+    
     $("#v-users").text(allUserNames.length ? allUserNames.join(", ") : "No users assigned");
     $("#v-teamsize").text(allUserNames.length + " Member" + (allUserNames.length !== 1 ? "s" : ""));
     $("#v-desc").text(project.description || "No Description / Requirements");
 
     var tasksContainer = $("#v-tasks-container").empty();
     
-    // FIXED: Always get tasks even for completed projects
     var tasks = projectTasksCache[project.Id] || [...new Map(normalizeTasksArray(project.tasks || []).map(t => [taskIdOf(t), t])).values()];
     var acceptedSet = new Set(toArrayAccepts(project.acceptedTasks || []).map(String));
 
@@ -429,29 +432,17 @@ $(document).ready(function () {
       var badgeClass = status === 3 ? "bg-success" : isAccepted ? "bg-primary" : "bg-warning";
       var badgeText = status === 3 ? "Completed" : isAccepted ? "Accepted" : "Pending";
       
-      // Handle multiple assigned users properly
-      var assignedUsers = [];
-      if (t.assignedUser) assignedUsers.push(t.assignedUser);
-      if (t.assignedUsers) {
-        var usersArray = Array.isArray(t.assignedUsers) ? t.assignedUsers 
-          : typeof t.assignedUsers === "string" ? t.assignedUsers.split(",").map(x => x.trim())
-          : t.assignedUsers.$values || [];
-        assignedUsers = assignedUsers.concat(usersArray);
-      }
-      
-      // Remove duplicates and filter out empty values
-      assignedUsers = [...new Set(assignedUsers.filter(u => u && u !== "N/A"))];
+      // Handle assigned users
+      var assignedUsers = convertUserIdsToUsernames(t.assignedUsers || []);
       
       var userDisplay = assignedUsers.length > 0 ? assignedUsers.join(", ") : "Unassigned";
       
-      // Create separate small avatars for each user
       var userAvatars = assignedUsers.length > 0 
         ? assignedUsers.map(user => 
             `<div class="task-user-avatar-small" title="${user}">${user.substring(0, 2).toUpperCase()}</div>`
           ).join('')
         : '<div class="task-user-avatar-small" title="Unassigned">US</div>';
 
-      // FIXED: Use formatted dates for task dates
       var dueDate = formatDate(t.dueDate);
       var completedDate = formatDate(t.completedDate);
 
@@ -494,12 +485,14 @@ $(document).ready(function () {
     $("#project-info .project-assignedby").text("Assigned by: " + (project.assignedBy || "N/A"));
     $("#t-status-badge").text(project.statusName || "Unknown").attr("class", `status-badge status-${(project.statusName || "unknown").toString().toLowerCase().replace(/\s/g, "")}`);
 
-    var allUserNames = getAllProjectUsers(project);
+    // Normalize assigned users data
+    var allUserNames = normalizeArray(project.assignedUsers || []);
+    console.log("Team modal users:", allUserNames);
+    
     $("#project-info .project-users").text(allUserNames.length ? "Assigned Users: " + allUserNames.join(", ") : "No users assigned");
 
     var $list = $("#team-task-list").empty();
     
-    // FIXED: Always get tasks even for completed projects
     var tasks = projectTasksCache[project.Id] || normalizeTasksArray(project.tasks || []);
     var acceptedSet = new Set(toArrayAccepts(project.acceptedTasks || []).map(String));
 
@@ -512,29 +505,17 @@ $(document).ready(function () {
       var taskId = String(taskIdOf(t)), isAccepted = acceptedSet.has(taskId);
       var status = parseInt(t.status || t.Status || 0);
       
-      // Handle multiple assigned users properly
-      var assignedUsers = [];
-      if (t.assignedUser) assignedUsers.push(t.assignedUser);
-      if (t.assignedUsers) {
-        var usersArray = Array.isArray(t.assignedUsers) ? t.assignedUsers 
-          : typeof t.assignedUsers === "string" ? t.assignedUsers.split(",").map(x => x.trim())
-          : t.assignedUsers.$values || [];
-        assignedUsers = assignedUsers.concat(usersArray);
-      }
-      
-      // Remove duplicates and filter out empty values
-      assignedUsers = [...new Set(assignedUsers.filter(u => u && u !== "N/A"))];
+      // Handle assigned users
+      var assignedUsers = convertUserIdsToUsernames(t.assignedUsers || []);
       
       var userDisplay = assignedUsers.length > 0 ? assignedUsers.join(", ") : "Unassigned";
       
-      // Create separate small avatars for each user
       var userAvatars = assignedUsers.length > 0 
         ? assignedUsers.map(user => 
             `<div class="member-avatar-small" title="${user}">${user.substring(0, 2).toUpperCase()}</div>`
           ).join('')
         : '<div class="member-avatar-small" title="Unassigned">US</div>';
 
-      // FIXED: Use formatted dates
       var assignedDate = formatDate(t.assignedDate);
       var completedDate = formatDate(t.completedDate);
 
@@ -561,13 +542,12 @@ $(document).ready(function () {
 
       var $statusContainer = $li.find(".status-container").empty();
       
-      // FIXED: Always show status for completed tasks, don't hide them
       if (status === 3) {
         $statusContainer.append('<span class="badge bg-success">Completed</span>');
       } else if (isAccepted) {
         $statusContainer.append('<span class="badge bg-primary">Accepted</span>');
       } else {
-        // For multiple users, show accept button for each user only if task is not completed
+        // For multiple users, show accept button for each user
         assignedUsers.forEach(user => {
           $statusContainer.append(`<button class="accept-btn btn btn-sm btn-outline-success me-1 mb-1" data-taskid="${taskId}" data-userid="${user}">Accept (${user})</button>`);
         });
@@ -584,207 +564,11 @@ $(document).ready(function () {
     });
   }
 
+  function renderHistoryModal(project) {
+    // History modal implementation
+    console.log("Rendering history for project:", project);
+  }
 
-function renderHistoryModal(project) {
-    console.log("Project data:", project); // Debug log
-    $("#v-status-badge").text(project.statusName || "Unknown")
-        .attr("class", `status-badge status-${(project.statusName || "unknown")
-        .toLowerCase().replace(/\s/g, "")}`);
-
-    $("#history-project-name").text(project.projectName || "N/A");
-    $("#history-project-dept").text(project.departmentName || "N/A");
- 
-    
-    // FIXED: Use formatted dates
-    $("#history-project-start").text(formatDate(project.startingDate) || "N/A");
-let deadline =
-    project.tasks?.$values?.length
-        ? project.tasks.$values
-            .map(t => t.dueDate)
-            .filter(d => d)
-            .sort((a, b) => new Date(a) - new Date(b))
-            .pop()
-        : null;
-
-$("#history-project-deadline").text(formatDate(deadline) || "N/A");
-
-
-    
-
-    var allUserNames = getAllProjectUsers(project);
-    $("#history-project-users").text(
-        allUserNames.length ? "Assigned Users: " + allUserNames.join(", ") : "No users assigned"
-    );
-
-    // FIXED: Better task retrieval with fallbacks
-    const uniqueTasks = projectTasksCache[project.Id] || 
-                       normalizeTasksArray(project.tasks || []) || 
-                       [];
-
-    console.log("Tasks found:", uniqueTasks); // Debug log
-
-    const acceptedSet = new Set(toArrayAccepts(project.acceptedTasks || []).map(String));
-
-    const $taskList = $("#history-task-list").empty();
-
-    // Add filter dropdown if it doesn't exist
-    if ($("#taskFilter").length === 0) {
-        $("#history-task-list").before(`
-            <div class="d-flex justify-content-end mb-2">
-                <select id="taskFilter" class="form-select form-select-sm" style="width: auto;">
-                    <option value="all">All Tasks</option>
-                    <option value="pending">Pending</option>
-                    <option value="accepted">Accepted</option>
-                    <option value="completed">Completed</option>
-                </select>
-            </div>
-        `);
-    }
-
-    function renderTasks(filter = "all") {
-        $taskList.empty();
-
-        if (!uniqueTasks || uniqueTasks.length === 0) {
-            $taskList.append(`
-                <div class="text-center text-muted py-4">
-                    <i class="bi bi-inbox mb-2"></i><br>
-                    No tasks found for this project
-                </div>
-            `);
-            return;
-        }
-
-        let filtered = uniqueTasks.filter(t => {
-            if (!t) return false;
-            
-            const taskId = taskIdOf(t);
-            const isAccepted = acceptedSet.has(String(taskId));
-            const isCompleted = parseInt(t.status || t.Status || t.taskStatus || 0) === 3;
-
-            if (filter === "pending") return !isAccepted && !isCompleted;
-            if (filter === "accepted") return isAccepted && !isCompleted;
-            if (filter === "completed") return isCompleted;
-            return true; // all
-        });
-
-        if (!filtered.length) {
-            $taskList.append(`
-                <div class="text-center text-muted py-4">
-                    <i class="bi bi-inbox mb-2"></i><br>
-                    No ${filter} tasks found
-                </div>
-            `);
-            return;
-        }
-
-        filtered.forEach(t => {
-            if (!t) return;
-            
-            const taskId = String(taskIdOf(t));
-            const isAccepted = acceptedSet.has(taskId);
-            const isCompleted = parseInt(t.status || t.Status || t.taskStatus || 0) === 3;
-
-            const status = isCompleted ? "Completed" : isAccepted ? "Accepted" : "Pending";
-            const badgeClass =
-                isCompleted ? "bg-success" :
-                isAccepted ? "bg-primary" :
-                "bg-warning";
-
-            // FIXED: Better user assignment handling
-            var assignedUsers = [];
-            
-            // Check multiple possible properties for assigned users
-            if (t.assignedUser && t.assignedUser !== "N/A") assignedUsers.push(t.assignedUser);
-            if (t.assignedTo && t.assignedTo !== "N/A") assignedUsers.push(t.assignedTo);
-            if (t.AssignedUser && t.AssignedUser !== "N/A") assignedUsers.push(t.AssignedUser);
-            
-            if (t.assignedUsers) {
-                var usersArray = [];
-                if (Array.isArray(t.assignedUsers)) {
-                    usersArray = t.assignedUsers;
-                } else if (typeof t.assignedUsers === "string") {
-                    usersArray = t.assignedUsers.split(",").map(x => x.trim());
-                } else if (t.assignedUsers.$values) {
-                    usersArray = t.assignedUsers.$values;
-                }
-                assignedUsers = assignedUsers.concat(usersArray);
-            }
-            
-            // Remove duplicates and filter out empty values
-            assignedUsers = [...new Set(assignedUsers.filter(u => u && u !== "N/A" && u !== ""))];
-            
-            var userDisplay = assignedUsers.length > 0 ? assignedUsers.join(", ") : "Unassigned";
-            
-            // Create avatars for users
-            var userAvatars = assignedUsers.length > 0 
-              ? assignedUsers.map(user => 
-                  `<div class="history-member-avatar-small" title="${user}">${user.substring(0, 2).toUpperCase()}</div>`
-                ).join('')
-              : '<div class="history-member-avatar-small" title="Unassigned">NA</div>';
-
-            // FIXED: Better date handling with multiple possible property names
-            var startingDate = formatDate(project.startingDate || project.StartDate);
-            var assignedDate = formatDate(t.assignedDate || t.AssignedDate || t.createdDate);
-            var completedDate = formatDate(t.completedDate || t.CompletedDate);
-            var dueDate = formatDate(t.dueDate || t.DueDate);
-
-            // FIXED: Better task title handling
-            var taskTitle = t.title || t.TaskName || t.taskName || t.Name || "Untitled Task";
-            var assignedBy = t.assignedBy || t.AssignedBy || "N/A";
-            var taskDescription = t.description || t.Description || "No description provided";
-
-            $taskList.append(`
-                <div class="card border-0 shadow-sm mb-3">
-                    <div class="card-body p-3">
-                        <div class="d-flex justify-content-between mb-2">
-                            <h6 class="fw-semibold mb-0" style="font-size: 0.9rem;">
-                                ${taskTitle}
-                            </h6>
-                            <span class="badge ${badgeClass}">${status}</span>
-                        </div>
-
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <div class="history-member-avatars-container">${userAvatars}</div>
-                            <div>
-                                <div class="fw-medium" style="font-size: 0.95rem;">
-                                    ${userDisplay}
-                                </div>
-                                <small class="text-muted">Assigned by ${assignedBy}</small>
-                            </div>
-                        </div>
-
-                        ${taskDescription && taskDescription !== "No description provided" ? `
-                            <div class="small text-muted mb-2">
-                                <strong>Description:</strong> ${taskDescription}
-                            </div>
-                        ` : ''}
-
-                        <div class="small text-muted mt-2">
-                            <div><i class="bi bi-folder2-open me-1"></i> Project Created: ${startingDate || "—"}</div>
-                            <div><i class="bi bi-person-plus me-1"></i> Task Assigned: ${assignedDate || "—"}</div>
-                            ${isAccepted ? `<div><i class="bi bi-check2-circle me-1"></i> Task Accepted</div>` : ""}
-                            ${isCompleted ? `<div><i class="bi bi-flag me-1"></i> Task Completed: ${completedDate || "—"}</div>` : ""}
-                        </div>
-
-                        ${dueDate && dueDate !== "N/A" ? `
-                            <div class="d-flex align-items-center text-muted small mt-2">
-                                <i class="bi bi-calendar-event me-1"></i>
-                                Due: ${dueDate}
-                            </div>
-                        ` : ""}
-                    </div>
-                </div>
-            `);
-        });
-    }
-
-    $("#taskFilter").off("change").on("change", function () {
-        renderTasks($(this).val());
-    });
-
-    // render initial
-    renderTasks("all");
-}
   // --- Event Handlers ---
   $("#searchInput").on("input", function () {
     currentUserSearchTerm = $(this).val().trim().toLowerCase();
@@ -859,6 +643,7 @@ $("#history-project-deadline").text(formatDate(deadline) || "N/A");
             if (projectId) {
               delete projectTasksCache[projectId];
               delete projectAcceptedTasksCache[projectId];
+              delete projectUsersCache[projectId];
               loadAllProjectTasks().then(() => {
                 renderProjects(filterProjectsByUser(currentUserFilter), currentStatusFilter, currentSearchTerm);
                 renderAssignedUsers();

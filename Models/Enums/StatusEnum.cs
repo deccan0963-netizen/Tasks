@@ -4,8 +4,8 @@ namespace TaskManagement.Models.Enums
 {
     public enum StatusEnum
     {
-        [Description("Active")]
-        Active = 0,
+        // [Description("Active")]
+        // Active = 0,
 
         [Description("Pending")]
         Pending = 1,

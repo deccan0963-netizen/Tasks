@@ -65,6 +65,14 @@ namespace TaskManagement.Controllers
                 ViewBag.ProjectLookup = projects
                     .GroupBy(p => p.Id)
                     .ToDictionary(g => g.Key, g => g.First().ProjectName.ToString());
+                // Load users
+                var userResult = await _apiUserLoader.GetApiListDataAsync<ApiUserDto>();
+                ViewBag.Users = userResult.IsSuccess ? userResult.Value : new List<ApiUserDto>();
+
+                ViewBag.UsersLookup =
+                    (userResult.IsSuccess && userResult.Value != null)
+                        ? userResult.Value.ToDictionary(u => u.id, u => u.userName)
+                        : new Dictionary<int, string>();
 
                 return View(allTasks);
             }
@@ -131,11 +139,14 @@ namespace TaskManagement.Controllers
         [PermissionFilter("task", "Create-Update")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<JsonResult> Create(TaskBo model, List<string> SelectedUserNames)
+        public async Task<JsonResult> Create(TaskBo model, List<int> SelectedUserNames)
         {
             try
             {
-                model.SelectedUserNames = SelectedUserNames ?? new List<string>();
+                model.AssignedBy = GetCurrentUserName();
+                model.SelectedUserNames = SelectedUserNames ?? new List<int>();
+                model.AssignedUsers = string.Join(",", model.SelectedUserNames);
+
                 model.DueDate = DateTime.SpecifyKind(model.DueDate, DateTimeKind.Utc);
 
                 if (model.Status == StatusEnum.Completed)
@@ -205,11 +216,13 @@ namespace TaskManagement.Controllers
         [PermissionFilter("task", "Create-Update")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<JsonResult> Edit(TaskBo model, List<string> SelectedUserNames)
+        public async Task<JsonResult> Edit(TaskBo model, List<int> SelectedUserNames)
         {
             try
             {
-                model.SelectedUserNames = SelectedUserNames ?? new List<string>();
+                model.AssignedBy = GetCurrentUserName();
+                model.SelectedUserNames = SelectedUserNames ?? new List<int>();
+                model.AssignedUsers = string.Join(",", model.SelectedUserNames);
                 model.DueDate = DateTime.SpecifyKind(model.DueDate, DateTimeKind.Utc);
 
                 if (model.Status == StatusEnum.Completed)

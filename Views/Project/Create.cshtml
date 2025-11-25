@@ -115,7 +115,7 @@
                 <a asp-action="Index" class="me-2 text-decoration-none back-arrow">
                     <i class="bi bi-arrow-left-circle fa-lg"></i>
                 </a>
-                <h4 class="fw-bold mb-0">Create Work Segments</h4>
+                <h4 class="fw-bold mb-0">Create Work Category</h4>
             </div>
 
             @Html.AntiForgeryToken()
@@ -138,7 +138,7 @@
 
                     <!-- Project / Work Segment -->
                     <div class="col-md-3">
-                        <label>Work Segment</label>
+                        <label>Work Category</label>
                         <input asp-for="ProjectName" class="form-control" required />
                         <span asp-validation-for="ProjectName" class="text-danger"></span>
                     </div>
@@ -185,7 +185,7 @@
                         <input id="Clients" name="Clients" class="form-control" required />
                     </div>
                     <!-- Assigned By -->
-                    <div class="col-md-3">
+                    @* <div class="col-md-3">
                         <label>Assigned By</label>
                         <select id="AssignedBy" name="AssignedBy" class="form-select select2" required>
                             <option value="">-- Select Assigned By --</option>
@@ -195,7 +195,7 @@
 
                             }
                         </select>
-                    </div>
+                    </div> *@
 
                     <!-- Assigned Users -->
                     <div class="col-md-3">
@@ -215,6 +215,18 @@
                         <input type="text" id="StartDate" name="StartDate" class="form-control datepicker"
                             placeholder="DD/MM/YYYY" required />
                     </div>
+                    <div class="col-md-3">
+                        <label>Status</label>
+                        <select id="Status" name="Status" class="form-select select2">
+                            <option value="1">Pending</option>
+                            <option value="2">InProgress</option>
+                            <option value="3">Completed</option>
+                        </select>
+                        <input type="hidden" id="Status" name="Status" value="1" />
+
+                        <span asp-validation-for="Status" class="text-danger"></span>
+                    </div>
+
 
                     <!-- Description -->
                     <div class="col-md-12">
@@ -273,7 +285,7 @@
                 StartDate: moment($("#StartDate").val(), "DD/MM/YYYY").utc().format(),
                 Description: $("#Description").val()
             };
-            console.log("project data",formData);
+            console.log("project data", formData);
 
             $.ajax({
                 url: '@Url.Action("Create", "Project")',
@@ -289,7 +301,7 @@
                             timer: 1500,
                             showConfirmButton: false
                         })
-                        .then(() => location.href = '@Url.Action("Index", "Project")');
+                            .then(() => location.href = '@Url.Action("Index", "Project")');
                     } else {
 
                         // FIX: always convert to array

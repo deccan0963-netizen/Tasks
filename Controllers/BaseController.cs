@@ -11,6 +11,11 @@ namespace TaskManagement.Controllers
             return 1;
         }
 
+        protected string GetCurrentUserName()
+        {
+            return "426";
+        }
+
         protected void SetCreatedFields(BaseEntity entity)
         {
             var userId = GetCurrentUserId();
@@ -28,13 +33,5 @@ namespace TaskManagement.Controllers
             entity.UpdatedBy = userId;
             entity.UpdatedTime = DateTime.UtcNow;
         }
-        // protected void SetUpdatedFields(BaseEntity entity)
-        // {
-        //     var userId = GetCurrentUserId();
-        //     entity.UpdatedBy = userId;
-        //     entity.UpdatedTime = DateTime.UtcNow;
-        // }
-
-      
     }
 }

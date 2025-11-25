@@ -3,7 +3,7 @@
 @using TaskManagement.Models.Enums
 
 @{
-    ViewData["Title"] = "Edit Work Segment";
+    ViewData["Title"] = "Edit Work Category";
 
     var users = ViewBag.Users as List<ApiUserDto> ?? new List<ApiUserDto>();
     var departments = ViewBag.Departments as List<ApiDeptDto> ?? new List<ApiDeptDto>();
@@ -131,7 +131,7 @@ new SelectListItem { Value = "3", Text = "Completed" }
                 <a asp-action="Index" class="me-2 text-decoration-none back-arrow">
                     <i class="bi bi-arrow-left-circle fa-lg"></i>
                 </a>
-                <h4 class="fw-bold mb-0">Edit Work Segment</h4>
+                <h4 class="fw-bold mb-0">Edit Work Category</h4>
             </div>
 
             @Html.AntiForgeryToken()
@@ -141,7 +141,7 @@ new SelectListItem { Value = "3", Text = "Completed" }
                 <div class="row g-3">
                     <!-- Work Segment -->
                     <div class="col-md-3">
-                        <label>Work Segment</label>
+                        <label>Work Category</label>
                         <input asp-for="ProjectName" class="form-control" />
                     </div>
 
@@ -182,7 +182,7 @@ new SelectListItem { Value = "3", Text = "Completed" }
                     </div>
 
                     <!-- Assigned By -->
-                    <div class="col-md-3">
+                    @* <div class="col-md-3">
                         <label>Assigned By</label>
                         <select asp-for="AssignedBy" id="AssignedBy" class="form-select select2" required>
                             <option value="">-- Select Assigned By --</option>
@@ -191,7 +191,7 @@ new SelectListItem { Value = "3", Text = "Completed" }
                                 <option value="@user.userName">@user.userName</option>
                             }
                         </select>
-                    </div>
+                    </div> *@
 
 
                     <!-- Assigned Users -->
@@ -291,7 +291,8 @@ new SelectListItem { Value = "3", Text = "Completed" }
                 Location: $('#Location').val(),
                 Department: $('#Department').val(),
                 Concern: $('#Concern').val(),
-              SelectedUserNames: ($("#assignedUser").val() || []).map(Number),
+          SelectedUserNames: ($("#AssignedUsers").val() || []).map(Number),  // FIXED
+    AssignedUsers: ($("#AssignedUsers").val() || []).join(','),   
 
                 Clients: $('#Clients').val(),
                 AssignedBy: $('#AssignedBy').val(),  // <-- new field

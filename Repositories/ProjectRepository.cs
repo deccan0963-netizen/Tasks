@@ -28,7 +28,7 @@ namespace TaskManagement.Repositories
                     ? DateTime.SpecifyKind(project.EndDate.Value, DateTimeKind.Utc)
                     : null;
 
-                project.CreatedTime = DateTime.UtcNow;             
+                project.CreatedTime = DateTime.UtcNow;
 
                 _context.Projects.Add(project);
                 await _context.SaveChangesAsync();
@@ -52,22 +52,31 @@ namespace TaskManagement.Repositories
                 if (existing == null)
                     return Result.Fail<ProjectBo>("Project not found");
 
-                // Update fields instead of creating new record
+                existing.IsDisabled = "Y";
+                existing.UpdatedTime = DateTime.UtcNow;
+                _context.Projects.Update(existing);
+                // Update fields
                 existing.ProjectName = project.ProjectName;
                 existing.Location = project.Location;
                 existing.Department = project.Department;
                 existing.Concern = project.Concern;
-
                 existing.Clients = project.Clients;
                 existing.Description = project.Description;
-                existing.Status = project.Status; // e.g., Completed
+                existing.Status = project.Status;
+
                 existing.StartDate = DateTime.SpecifyKind(project.StartDate, DateTimeKind.Utc);
                 existing.EndDate = project.EndDate.HasValue
                     ? DateTime.SpecifyKind(project.EndDate.Value, DateTimeKind.Utc)
                     : null;
+
                 existing.SelectedUserNames = selectedUserNames;
-                existing.AssignedBy = project.AssignedBy?.Trim();
+                existing.AssignedUsers = string.Join(",", selectedUserNames);
+
+                existing.AssignedBy = project.AssignedBy;
                 existing.UpdatedTime = DateTime.UtcNow;
+
+                // Save IsDisabled
+                existing.IsDisabled = project.IsDisabled;
 
                 _context.Projects.Update(existing);
                 await _context.SaveChangesAsync();

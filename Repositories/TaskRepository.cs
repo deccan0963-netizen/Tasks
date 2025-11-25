@@ -62,7 +62,7 @@ namespace TaskManagement.Repositories
                     // Department = task.Department,
                     ProjectId = task.ProjectId,
                     SelectedUserNames = task.SelectedUserNames,
-                    AssignedUsers = string.Join(",", task.SelectedUserNames ?? new List<string>()),
+                    AssignedUsers = string.Join(",", task.SelectedUserNames ?? new List<int>()),
                     AssignedBy = task.AssignedBy,
                     Description = task.Description,
                     Status = task.Status,

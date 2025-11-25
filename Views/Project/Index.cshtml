@@ -45,13 +45,13 @@
 @Html.AntiForgeryToken()
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3><i class="bi bi-cast"></i> Work Segments</h3>
+    <h3><i class="bi bi-cast"></i> Work Category</h3>
 
     @if (rolePermessions.Any(rp =>
         rp.PrimaryActionName == "Project" && rp.SecondaryActionName == "Create-Update"))
     {
         <a asp-action="Create" class="btn btn-primary px-3">
-            <i class="fas fa-plus me-1"></i> Add Work Segment
+            <i class="fas fa-plus me-1"></i> Add Work Category
         </a>
     }
 </div>
@@ -60,7 +60,7 @@
     <thead style="background:#e2f8f5; color:#016D66;">
         <tr>
             <th>S.No</th>
-            <th>Work Segment</th>
+            <th>Work Category</th>
             <th>Assigned Users</th>
             <th>Location</th>
             <th>Department</th>
@@ -110,10 +110,6 @@
                 <td>
                     @switch (project.Status)
                     {
-                        case StatusEnum.Active:
-                            <span class="badge badge-active px-3 py-1">Active</span>
-                            ;
-                            break;
                         case StatusEnum.Pending:
                             <span class="badge badge-pending px-3 py-1">Pending</span>
                             ;

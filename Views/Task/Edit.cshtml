@@ -8,7 +8,7 @@
     // Preloaded dropdown data
     var departments = ViewBag.Departments as List<ApiDeptDto> ?? new();
     var users = ViewBag.Users as List<ApiUserDto> ?? new();
-    var selectedUsers = Model.SelectedUserNames ?? new List<string>();
+    var selectedUsers = Model.SelectedUserNames ?? new List<int>();
 
     // Enum dropdowns
    var projects = ViewBag.Projects as List<SelectListItem> ?? new List<SelectListItem>();
@@ -90,7 +90,7 @@
                     </div> *@
 
                     <div class="col-md-3">
-                        <label>Work Segment</label>
+                        <label>Work Category</label>
                         <select id="ProjectId" name="ProjectId" class="form-select select2" required>
                             <option value="">-- Select Project --</option>
                             @foreach (var p in ViewBag.Projects)
@@ -102,7 +102,7 @@
                         </select>
                     </div>
 
-                    <!-- Assigned By -->
+                    @* <!-- Assigned By -->
                     <div class="col-md-3">
                         <label>Assigned By</label>
                         <select asp-for="AssignedBy" id="AssignedBy" class="form-select select2" required>
@@ -112,7 +112,7 @@
                                 <option value="@user.userName">@user.userName</option>
                             }
                         </select>
-                    </div>
+                    </div> *@
 
                     <!-- Assigned Users -->
                     <div class="col-md-3">
@@ -120,7 +120,7 @@
                         <select id="AssignedUsers" class="form-select select2" multiple="multiple">
                             @foreach (var user in users)
                             {
-                                <option value="@user.userName">@user.userName</option>
+                                <option value="@user.id">@user.userName</option>
                             }
                         </select>
                     </div>

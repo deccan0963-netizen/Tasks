@@ -149,7 +149,7 @@
 
                     <!-- Project -->
                     <div class="col-md-3">
-                        <label>Work Segment</label>
+                        <label>Work Category</label>
                         <select id="ProjectId" name="ProjectId" class="form-select select2" required>
                             <option value="">-- Select Project --</option>
                             @foreach (var p in ViewBag.Projects)
@@ -159,7 +159,7 @@
                         </select>
 
                     </div>
-                    <div class="col-md-3">
+                    @* <div class="col-md-3">
                         <label>Assigned By</label>
                         <select id="AssignedBy" name="AssignedBy" class="form-select select2" required>
                             <option value="">-- Select Assigned By --</option>
@@ -169,7 +169,7 @@
                             }
                         </select>
                         <span class="text-danger" id="AssignedBy-validation"></span>
-                    </div>
+                    </div> *@
 
                     <!-- Assigned Users -->
                     <div class="col-md-3">
@@ -178,7 +178,7 @@
                             multiple="multiple">
                             @foreach (var user in ViewBag.Users)
                             {
-                                <option value="@user.userName">@user.userName</option>
+                                <option value="@user.id">@user.userName</option>
                             }
 
                         </select>
@@ -197,8 +197,7 @@
                     <div class="col-md-3">
                         <label>Status</label>
                         <select id="Status" name="Status" class="form-select select2">
-                            <option value="0">Active</option>
-                            <option value="1">Pending</option>
+                       <option value="1">Pending</option>
                             <option value="2">InProgress</option>
                             <option value="3">Completed</option>
                         </select>
@@ -259,58 +258,58 @@
             });
         }); *@
 
-        // Save Task
-        $('#taskForm').submit(function (e) {
-            e.preventDefault();
+            // Save Task
+            $('#taskForm').submit(function (e) {
+                e.preventDefault();
 
-            // Validation
-            if (!$('#TaskName').val() ||
-                !$('#ProjectId').val() ||
-                !$('#AssignedBy').val() ||
-                !$('#DueDate').val()) {
+                // Validation
+                if (!$('#TaskName').val() ||
+                    !$('#ProjectId').val() ||
+                    @* !$('#AssignedBy').val() || *@
+                    !$('#DueDate').val()) {
 
-                Swal.fire('Validation Error', 'Please fill all required fields', 'warning');
-                return;
-            }
+                    Swal.fire('Validation Error', 'Please fill all required fields', 'warning');
+                    return;
+                }
 
-            let dueDate = moment($('#DueDate').val(), 'DD/MM/YYYY')
-                .format('YYYY-MM-DDTHH:mm:ss');
+                let dueDate = moment($('#DueDate').val(), 'DD/MM/YYYY')
+                    .format('YYYY-MM-DDTHH:mm:ss');
 
-            // Prepare Data
-            let formData = {
-                TaskName: $('#TaskName').val(),
-                ProjectId: parseInt($('#ProjectId').val()),
+                // Prepare Data
+                let formData = {
+                    TaskName: $('#TaskName').val(),
+                    ProjectId: parseInt($('#ProjectId').val()),
 
-                AssignedBy: $('#AssignedBy').val(),
-                SelectedUserNames: $('#AssignedUsers').val() || [],
-                DueDate: dueDate,
-                Description: $('#Description').val(),
-                Status: $('#Status').val()
+                @* AssignedBy: $('#AssignedBy').val(), *@
+                    SelectedUserNames: $('#AssignedUsers').val() || [],
+                        DueDate: dueDate,
+                            Description: $('#Description').val(),
+                                Status: $('#Status').val()
             };
 
-            Swal.fire({ title: 'Saving Task...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'Saving Task...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-            $.ajax({
-                url: '@Url.Action("Create", "Task")',
-                type: 'POST',
-                data: formData,
-                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
-                success: function (res) {
+        $.ajax({
+            url: '@Url.Action("Create", "Task")',
+            type: 'POST',
+            data: formData,
+            headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+            success: function (res) {
 
-                    Swal.close();
+                Swal.close();
 
-                    if (res.success) {
-                        Swal.fire('Created!', 'Task created successfully!', 'success')
-                            .then(() => window.location.href = '@Url.Action("Index", "Task")');
-                    } else {
-                        let errorMsg = Array.isArray(res.errors) ? res.errors.join(", ") : res.errors;
-                        Swal.fire('Error', errorMsg, 'error');
-                    }
-                },
-                error: function () {
-                    Swal.fire('Server Error', 'Something went wrong.', 'error');
+                if (res.success) {
+                    Swal.fire('Created!', 'Task created successfully!', 'success')
+                        .then(() => window.location.href = '@Url.Action("Index", "Task")');
+                } else {
+                    let errorMsg = Array.isArray(res.errors) ? res.errors.join(", ") : res.errors;
+                    Swal.fire('Error', errorMsg, 'error');
                 }
-            });
+            },
+            error: function () {
+                Swal.fire('Server Error', 'Something went wrong.', 'error');
+            }
         });
+    });
     });
 </script>

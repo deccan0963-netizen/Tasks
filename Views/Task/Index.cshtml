@@ -9,6 +9,7 @@
 
     var projectNames = ViewBag.ProjectLookup as Dictionary<int, string>
     ?? new Dictionary<int, string>();
+    var usersLookup = ViewBag.Users as List<ApiUserDto> ?? new List<ApiUserDto>();
     List<RolePermessionDto> rolePermessions = ViewBag.RolePermessions;
 
 }
@@ -68,7 +69,7 @@
         <tr>
             <th>S.No</th>
             <th>Task Name</th>
-            <th>Work Segment</th>
+            <th>Work Category</th>
             <th>Assigned Users</th>
             @* <th>Department</th> *@
             <th>Due Date</th>
@@ -91,7 +92,25 @@
                                     : "N/A")
                 </td>
 
-                <td>@(task.SelectedUserNames.Any() ? string.Join(", ", task.SelectedUserNames) : "N/A")</td>
+                @* <td>@(task.SelectedUserNames.Any() ?
+                                    string.Join(", ", task.SelectedUserNames)
+                                    : "N/A")</td> *@
+
+                
+                    <!-- Replace the "Assigned Users" <td> with this -->
+                <td>
+                    @if (task.SelectedUserNames.Any())
+                    {
+                        var names = task.SelectedUserNames
+                        .Select(id => usersLookup.FirstOrDefault(u => u.id == id)?.userName ?? "N/A")
+                        .ToList();
+                        @string.Join(", ", names)
+                    }
+                    else
+                    {
+                        @:N/A
+                    }
+                </td>
                 @* <td>
                     @(departmentNames.ContainsKey(task.Department)
                                     ? departmentNames[task.Department]
@@ -103,27 +122,27 @@
                 <td>
                     @switch (task.Status)
                     {
-                        case StatusEnum.Active:
-                            <span class="badge badge-active px-3 py-2">Active</span>
-                            ;
-                            break;
                         case StatusEnum.Pending:
                             <span class="badge badge-onhold px-3 py-2">Pending</span>
                             ;
                             break;
+
                         case StatusEnum.InProgress:
                             <span class="badge badge-onhold px-3 py-2">In Progress</span>
                             ;
                             break;
+
                         case StatusEnum.Completed:
                             <span class="badge badge-complete px-3 py-2">Completed</span>
                             ;
                             break;
+
                         default:
                             <span class="badge badge-other px-3 py-2">@task.Status</span>
                             ;
                             break;
                     }
+
                 </td>
                 <td class="action-btns">
                     @if (rolePermessions.Any(rp =>

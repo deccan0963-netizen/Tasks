@@ -132,12 +132,11 @@ namespace TaskManagement.Controllers
         public async Task<JsonResult> Create(ProjectBo model, List<int> SelectedUserNames)
         {
             try
-            { 
-               
-
-                var response = await _projectRepo.AddAsync(
-                    model
-                );
+            {
+                SetCreatedFields(model);
+                model.AssignedBy = GetCurrentUserName();
+                model.Status = StatusEnum.Pending;
+                var response = await _projectRepo.AddAsync(model);
                 if (response.IsFailed)
                     return Json(
                         new
@@ -164,7 +163,15 @@ namespace TaskManagement.Controllers
                 return NotFound();
 
             var project = projectResult.Value;
-            project.SelectedUserNames ??= new List<int>();
+            // If AssignedUsers has value, parse to SelectedUserNames
+            if (!string.IsNullOrEmpty(project.AssignedUsers))
+            {
+                project.SelectedUserNames = project
+                    .AssignedUsers.Split(',')
+                    .Select(int.Parse)
+                    .ToList();
+            }
+
             var userResult = await _apiUserLoader.GetApiListDataAsync<ApiUserDto>();
             var deptResult = await _apiDepartmentLoad.GetApiListDataAsync<ApiDeptDto>();
             var concernResult = await _apiConcernLoad.GetApiListDataAsync<ApiConcernDto>();
@@ -198,7 +205,8 @@ namespace TaskManagement.Controllers
         {
             try
             {
-                model.AssignedBy = model.AssignedBy?.Trim();
+                SetUpdatedFields(model);
+                model.AssignedBy = GetCurrentUserName();
 
                 var response = await _projectRepo.UpdateAsync(
                     model,
@@ -270,7 +278,20 @@ namespace TaskManagement.Controllers
                 GlobalDeptData
                     .globalDeptList?.FirstOrDefault(d => d.SectionId == project.Department)
                     ?.SectionName ?? "N/A";
-            var assignedUsers = project.SelectedUserNames ?? new List<int>();
+
+            // Convert SelectedUserNames (int list) to actual usernames
+            var assignedUserNames = new List<string>();
+            if (project.SelectedUserNames != null && project.SelectedUserNames.Any())
+            {
+                foreach (var userId in project.SelectedUserNames)
+                {
+                    var user = GlobalUserData.globalUserList?.FirstOrDefault(u => u.id == userId);
+                    if (user != null)
+                    {
+                        assignedUserNames.Add(user.userName);
+                    }
+                }
+            }
 
             var tasks = new List<object>();
             if (_taskRepo != null)
@@ -281,8 +302,13 @@ namespace TaskManagement.Controllers
                     {
                         id = t.Id,
                         title = t.TaskName,
-                        assignedUser = t.SelectedUserNames.FirstOrDefault() ?? "N/A",
-                        assignedUsers = t.SelectedUserNames ?? new List<string>(),
+                        // Convert task assigned users from IDs to usernames
+                        AssignedUsers = t.SelectedUserNames?.Select(userId =>
+                                GlobalUserData
+                                    .globalUserList?.FirstOrDefault(u => u.id == userId)
+                                    ?.userName ?? userId.ToString()
+                            )
+                            .ToList() ?? new List<string>(),
                         assignedBy = t.AssignedBy ?? "N/A",
                         status = (int)t.Status,
                         description = t.Description ?? "No Description / Requirements",
@@ -305,14 +331,15 @@ namespace TaskManagement.Controllers
                         departmentName = deptName,
                         location = project.Location.ToString() ?? "N/A",
                         startingDate = project.StartDate.ToString("dd/MM/yyyy"),
-                        assignedUsers = assignedUsers,
+                        assignedUsers = assignedUserNames, // Now sending actual usernames
                         assignedBy = project.AssignedBy,
-                        teamSize = assignedUsers.Count,
+                        teamSize = assignedUserNames.Count,
                         description = project.Description ?? "No Description / Requirements",
                         statusName = project.Status.ToString(),
                         tasks = tasks,
                         acceptedTasks = acceptedTasks,
-                    },
+                        Id = project.Id, 
+                }
                 }
             );
         }

@@ -16,7 +16,6 @@ namespace TaskManagement.Models
         [Column("TASK_NAME")]
         public string TaskName { get; set; }
 
-       
         [Column("DEPARTMENT")]
         public int? Department { get; set; }
 
@@ -30,14 +29,14 @@ namespace TaskManagement.Models
 
         [Required(ErrorMessage = "Assigned By is required.")]
         [Column("ASSIGNED_BY")]
-        public string AssignedBy { get; set; }  
+        public string AssignedBy { get; set; }
 
         [Required(ErrorMessage = "Due Date is required.")]
         [Column("DUE_DATE", TypeName = "timestamp with time zone")]
         public DateTime DueDate { get; set; }
 
         [Column("COMPLETED_DATE", TypeName = "timestamp with time zone")]
-        public DateTime? CompletedDate { get; set; }  
+        public DateTime? CompletedDate { get; set; }
 
         [Column("DESCRIPTION")]
         public string Description { get; set; }
@@ -53,23 +52,28 @@ namespace TaskManagement.Models
         public int ProgressPercent { get; set; }
 
         [NotMapped]
-        public List<string> SelectedUserNames
+        public List<int> SelectedUserNames
         {
             get
             {
                 if (!string.IsNullOrEmpty(AssignedUsers))
                 {
-                    return AssignedUsers
-                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                        .Select(u => u.Trim())
-                        .ToList();
+                    var ids = new List<int>();
+                    foreach (var s in AssignedUsers.Split(','))
+                    {
+                        if (int.TryParse(s.Trim(), out int id))
+                        {
+                            ids.Add(id);
+                        }
+                    }
+                    return ids;
                 }
-                return new List<string>();
+                return new List<int>();
             }
             set
             {
-                AssignedUsers =
-                    value != null && value.Count > 0 ? string.Join(",", value) : string.Empty;
+
+                AssignedUsers = string.Join(",", value.Where(id => id > 0));
             }
         }
     }
